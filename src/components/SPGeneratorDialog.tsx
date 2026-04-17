@@ -33,7 +33,9 @@ const DEFAULT_PAPER = { width: 210, height: 297, mt: 25.4, mb: 25.4, ml: 30, mr:
 export default function SPGeneratorDialog({
   open, onOpenChange,
   defaultName = '', defaultPosition = '', defaultPoints = 0, defaultReason = '', defaultSpStatus,
+  userId, onPrinted,
 }: SPGeneratorDialogProps) {
+  const { user } = useAuth();
   const [nama, setNama] = useState(defaultName);
   const [jabatan, setJabatan] = useState(defaultPosition);
   const [poin, setPoin] = useState<number>(defaultPoints);
