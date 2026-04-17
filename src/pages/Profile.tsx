@@ -91,6 +91,38 @@ export default function ProfilePage() {
     }
   };
 
+  const handleCashbonSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    const amountNum = parseFloat(cashbonForm.amount);
+    if (!amountNum || amountNum <= 0) {
+      toast({ title: 'Jumlah tidak valid', description: 'Masukkan jumlah cashbon lebih dari 0.', variant: 'destructive' });
+      return;
+    }
+    setCashbonSubmitting(true);
+    const { error } = await supabase.from('cashbon').insert({
+      user_id: user.id,
+      amount: amountNum,
+      notes: cashbonForm.notes,
+    });
+    setCashbonSubmitting(false);
+    if (error) {
+      toast({ title: 'Gagal mengajukan cashbon', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Berhasil!', description: 'Pengajuan cashbon telah dikirim.' });
+      setCashbonOpen(false);
+      setCashbonForm({ amount: '', notes: '' });
+      fetchCashbon();
+    }
+  };
+
+  const cashbonStatusVariant = (s: string) => {
+    if (s === 'approved') return 'default' as const;
+    if (s === 'paid') return 'secondary' as const;
+    if (s === 'rejected') return 'destructive' as const;
+    return 'outline' as const;
+  };
+
   if (!profile) {
     return (
       <AppLayout>
