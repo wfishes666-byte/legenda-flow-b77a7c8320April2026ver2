@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus, FileText } from 'lucide-react';
+import SPGeneratorDialog from '@/components/SPGeneratorDialog';
 
 export default function PunishmentPage() {
   const { user, role } = useAuth();
@@ -20,14 +21,27 @@ export default function PunishmentPage() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [form, setForm] = useState({ user_id: '', points_added: '', new_sp_status: 'Non-SP', reason: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [spOpen, setSpOpen] = useState(false);
+  const [spDefaults, setSpDefaults] = useState<{ name: string; position: string; points: number; reason: string; status: string }>({
+    name: '', position: '', points: 0, reason: '', status: 'SP-1',
+  });
+
+  const openGenerator = (overrides?: Partial<typeof spDefaults>) => {
+    setSpDefaults({
+      name: overrides?.name ?? '',
+      position: overrides?.position ?? '',
+      points: overrides?.points ?? 0,
+      reason: overrides?.reason ?? '',
+      status: overrides?.status ?? 'SP-1',
+    });
+    setSpOpen(true);
+  };
 
   const fetchData = async () => {
     const { data } = await supabase.from('punishments').select('*').order('issued_date', { ascending: false }).limit(200);
     if (data) setRecords(data);
-    if (canManage) {
-      const { data: p } = await supabase.from('profiles').select('user_id, full_name').order('full_name');
-      if (p) setProfiles(p);
-    }
+    const { data: p } = await supabase.from('profiles').select('user_id, full_name, job_title, discipline_points, warning_letter_status').order('full_name');
+    if (p) setProfiles(p);
   };
 
   useEffect(() => { fetchData(); }, [role]);
@@ -66,13 +80,21 @@ export default function PunishmentPage() {
   };
 
   const profileMap = new Map(profiles.map((p: any) => [p.user_id, p.full_name]));
+  const profileFullMap = new Map(profiles.map((p: any) => [p.user_id, p]));
 
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6 pt-12 md:pt-0">
-        <h1 className="text-2xl md:text-3xl font-bold font-sans flex items-center gap-3">
-          <AlertTriangle className="w-7 h-7" /> Punishment & SP
-        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold font-sans flex items-center gap-3">
+            <AlertTriangle className="w-7 h-7" /> Punishment & SP
+          </h1>
+          {canManage && (
+            <Button onClick={() => openGenerator()} variant="outline">
+              <FileText className="w-4 h-4 mr-2" /> Generator SP
+            </Button>
+          )}
+        </div>
 
         {canManage && (
           <Card className="glass-card">
@@ -132,20 +154,37 @@ export default function PunishmentPage() {
                     <th className="p-3 font-medium">Poin</th>
                     <th className="p-3 font-medium">Status SP</th>
                     <th className="p-3 font-medium">Alasan</th>
+                    {canManage && <th className="p-3 font-medium text-right">Aksi</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((r) => (
-                    <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="p-3">{r.issued_date}</td>
-                      <td className="p-3">{profileMap.get(r.user_id) || '-'}</td>
-                      <td className="p-3"><Badge variant="destructive">+{r.points_added}</Badge></td>
-                      <td className="p-3">{r.new_sp_status}</td>
-                      <td className="p-3 text-xs max-w-xs truncate">{r.reason}</td>
-                    </tr>
-                  ))}
+                  {records.map((r) => {
+                    const prof: any = profileFullMap.get(r.user_id);
+                    return (
+                      <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="p-3">{r.issued_date}</td>
+                        <td className="p-3">{prof?.full_name || '-'}</td>
+                        <td className="p-3"><Badge variant="destructive">+{r.points_added}</Badge></td>
+                        <td className="p-3">{r.new_sp_status}</td>
+                        <td className="p-3 text-xs max-w-xs truncate">{r.reason}</td>
+                        {canManage && (
+                          <td className="p-3 text-right">
+                            <Button size="sm" variant="ghost" onClick={() => openGenerator({
+                              name: prof?.full_name || '',
+                              position: prof?.job_title || '',
+                              points: prof?.discipline_points || r.points_added || 0,
+                              reason: r.reason,
+                              status: r.new_sp_status,
+                            })}>
+                              <FileText className="w-4 h-4 mr-1" /> Cetak SP
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                   {records.length === 0 && (
-                    <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Belum ada data punishment.</td></tr>
+                    <tr><td colSpan={canManage ? 6 : 5} className="p-8 text-center text-muted-foreground">Belum ada data punishment.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -153,6 +192,16 @@ export default function PunishmentPage() {
           </CardContent>
         </Card>
       </div>
+
+      <SPGeneratorDialog
+        open={spOpen}
+        onOpenChange={setSpOpen}
+        defaultName={spDefaults.name}
+        defaultPosition={spDefaults.position}
+        defaultPoints={spDefaults.points}
+        defaultReason={spDefaults.reason}
+        defaultSpStatus={spDefaults.status}
+      />
     </AppLayout>
   );
 }
