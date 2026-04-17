@@ -154,20 +154,37 @@ export default function PunishmentPage() {
                     <th className="p-3 font-medium">Poin</th>
                     <th className="p-3 font-medium">Status SP</th>
                     <th className="p-3 font-medium">Alasan</th>
+                    {canManage && <th className="p-3 font-medium text-right">Aksi</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((r) => (
-                    <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="p-3">{r.issued_date}</td>
-                      <td className="p-3">{profileMap.get(r.user_id) || '-'}</td>
-                      <td className="p-3"><Badge variant="destructive">+{r.points_added}</Badge></td>
-                      <td className="p-3">{r.new_sp_status}</td>
-                      <td className="p-3 text-xs max-w-xs truncate">{r.reason}</td>
-                    </tr>
-                  ))}
+                  {records.map((r) => {
+                    const prof: any = profileFullMap.get(r.user_id);
+                    return (
+                      <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="p-3">{r.issued_date}</td>
+                        <td className="p-3">{prof?.full_name || '-'}</td>
+                        <td className="p-3"><Badge variant="destructive">+{r.points_added}</Badge></td>
+                        <td className="p-3">{r.new_sp_status}</td>
+                        <td className="p-3 text-xs max-w-xs truncate">{r.reason}</td>
+                        {canManage && (
+                          <td className="p-3 text-right">
+                            <Button size="sm" variant="ghost" onClick={() => openGenerator({
+                              name: prof?.full_name || '',
+                              position: prof?.job_title || '',
+                              points: prof?.discipline_points || r.points_added || 0,
+                              reason: r.reason,
+                              status: r.new_sp_status,
+                            })}>
+                              <FileText className="w-4 h-4 mr-1" /> Cetak SP
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                   {records.length === 0 && (
-                    <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Belum ada data punishment.</td></tr>
+                    <tr><td colSpan={canManage ? 6 : 5} className="p-8 text-center text-muted-foreground">Belum ada data punishment.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -175,6 +192,16 @@ export default function PunishmentPage() {
           </CardContent>
         </Card>
       </div>
+
+      <SPGeneratorDialog
+        open={spOpen}
+        onOpenChange={setSpOpen}
+        defaultName={spDefaults.name}
+        defaultPosition={spDefaults.position}
+        defaultPoints={spDefaults.points}
+        defaultReason={spDefaults.reason}
+        defaultSpStatus={spDefaults.status}
+      />
     </AppLayout>
   );
 }
