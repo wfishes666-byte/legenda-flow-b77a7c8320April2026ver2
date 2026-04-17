@@ -140,6 +140,20 @@ export default function SPGeneratorDialog({
     if (!w) return;
     w.document.write(html);
     w.document.close();
+
+    // Log SP issuance to history (best-effort)
+    if (userId) {
+      supabase.from('sp_history').insert({
+        user_id: userId,
+        sp_level: `SP-${spLevel}`,
+        total_points: poin,
+        reason: penjabaran || '',
+        issued_by: user?.id ?? null,
+        printed_at: new Date().toISOString(),
+      }).then(({ error }) => {
+        if (!error) onPrinted?.();
+      });
+    }
   };
 
   const resetA4 = () => setPaper(DEFAULT_PAPER);
