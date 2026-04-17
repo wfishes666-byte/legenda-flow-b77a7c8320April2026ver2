@@ -34,8 +34,9 @@ export default function ContentPlanPage() {
   const canManage = role === 'management';
   const canEdit = role === 'management' || role === 'pic';
   const [records, setRecords] = useState<any[]>([]);
-  const [form, setForm] = useState({ title: '', description: '', platform: 'instagram', scheduled_date: '', status: 'idea' });
+  const [form, setForm] = useState({ title: '', description: '', platform: 'instagram', scheduled_date: '', status: 'idea', rate_card: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [engagementEdit, setEngagementEdit] = useState<Record<string, any>>({});
 
   const fetchData = async () => {
     const { data } = await supabase.from('content_plans').select('*').order('scheduled_date', { ascending: true });
@@ -43,6 +44,8 @@ export default function ContentPlanPage() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  const formatRupiah = (n: number) => `Rp ${Math.round(n || 0).toLocaleString('id-ID')}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +57,14 @@ export default function ContentPlanPage() {
       platform: form.platform,
       scheduled_date: form.scheduled_date || null,
       status: form.status,
+      rate_card: parseInt(form.rate_card.replace(/\D/g, '')) || 0,
       created_by: user.id,
     });
     if (error) {
       toast({ title: 'Gagal', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Berhasil', description: 'Content plan ditambahkan.' });
-      setForm({ title: '', description: '', platform: 'instagram', scheduled_date: '', status: 'idea' });
+      setForm({ title: '', description: '', platform: 'instagram', scheduled_date: '', status: 'idea', rate_card: '' });
       fetchData();
     }
     setSubmitting(false);
@@ -73,6 +77,37 @@ export default function ContentPlanPage() {
     } else {
       fetchData();
     }
+  };
+
+  const handleSaveEngagement = async (id: string) => {
+    const e = engagementEdit[id] || {};
+    const { error } = await supabase.from('content_plans').update({
+      engagement_likes: parseInt(e.likes) || 0,
+      engagement_comments: parseInt(e.comments) || 0,
+      engagement_shares: parseInt(e.shares) || 0,
+      engagement_views: parseInt(e.views) || 0,
+      engagement_reach: parseInt(e.reach) || 0,
+    }).eq('id', id);
+    if (error) {
+      toast({ title: 'Gagal', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Berhasil', description: 'Data engagement disimpan.' });
+      setEngagementEdit({ ...engagementEdit, [id]: undefined });
+      fetchData();
+    }
+  };
+
+  const startEditEngagement = (r: any) => {
+    setEngagementEdit({
+      ...engagementEdit,
+      [r.id]: {
+        likes: r.engagement_likes ?? 0,
+        comments: r.engagement_comments ?? 0,
+        shares: r.engagement_shares ?? 0,
+        views: r.engagement_views ?? 0,
+        reach: r.engagement_reach ?? 0,
+      },
+    });
   };
 
   return (
