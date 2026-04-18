@@ -48,10 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .limit(1)
-      .maybeSingle();
-    setRole((data?.role as AppRole) || 'crew');
+      .eq('user_id', userId);
+
+    const roles = (data?.map((row) => row.role as AppRole) || []);
+    const priority: AppRole[] = ['admin', 'management', 'pic', 'stockman', 'crew', 'staff'];
+    const resolvedRole = priority.find((candidate) => roles.includes(candidate)) || 'crew';
+    setRole(resolvedRole);
   };
 
   useEffect(() => {
