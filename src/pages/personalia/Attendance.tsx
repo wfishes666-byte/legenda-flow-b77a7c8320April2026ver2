@@ -363,6 +363,12 @@ export default function AttendancePage() {
           <TabsContent value="logs">
             <SelfieLogsTab outletId={selectedOutlet} profiles={outletProfiles} />
           </TabsContent>
+
+          {isManagement && (
+            <TabsContent value="outlets">
+              <OutletsManagementTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>
