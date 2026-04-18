@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
 import OutletSelector from '@/components/OutletSelector';
@@ -6,12 +6,14 @@ import { useOutlets } from '@/hooks/useOutlets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, TrendingDown, Download, Save, Plus, X } from 'lucide-react';
-import { format, endOfMonth } from 'date-fns';
+import { TrendingUp, Download, Save, Plus, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { format, endOfMonth, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -20,8 +22,20 @@ interface ExpenseRow {
   id: string;
   description: string;
   amount: number;
+  qty: number;
+  unit_price: number;
   category: string | null;
+  report_id: string;
+}
+
+interface ReportGroup {
+  report_id: string;
   report_date: string;
+  outlet_id: string | null;
+  outlet_name: string;
+  created_at: string;
+  expenses: ExpenseRow[];
+  income: number;
 }
 
 interface PLCategory {
