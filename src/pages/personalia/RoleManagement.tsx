@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck } from 'lucide-react';
-import { AppRole } from '@/hooks/useAuth';
+import { AppRole, useAuth } from '@/hooks/useAuth';
 
 interface UserWithRole {
   user_id: string;
@@ -25,6 +25,8 @@ const ROLES: { value: AppRole; label: string; description: string }[] = [
 
 export default function RoleManagement() {
   const { toast } = useToast();
+  const { role: currentRole } = useAuth();
+  const isAdmin = currentRole === 'admin';
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -52,6 +54,10 @@ export default function RoleManagement() {
   useEffect(() => { fetchUsers(); }, []);
 
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
+    if (!isAdmin) {
+      toast({ title: 'Akses ditolak', description: 'Hanya admin yang dapat mengubah role.', variant: 'destructive' });
+      return;
+    }
     setUpdating(userId);
     // Delete existing roles for user, then insert new
     const { error: delError } = await supabase.from('user_roles').delete().eq('user_id', userId);
@@ -83,7 +89,7 @@ export default function RoleManagement() {
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3 font-sans">
             <ShieldCheck className="w-7 h-7" /> Kelola Role & Akses
           </h1>
-          <p className="text-muted-foreground mt-1">Atur hak akses setiap karyawan ke modul sistem</p>
+          <p className="text-muted-foreground mt-1">{isAdmin ? 'Atur hak akses setiap karyawan ke modul sistem' : 'Lihat hak akses karyawan (hanya admin yang dapat mengubah)'}</p>
         </div>
 
         <Card className="glass-card">
@@ -126,7 +132,7 @@ export default function RoleManagement() {
                           <Select
                             value={u.role}
                             onValueChange={(v) => handleRoleChange(u.user_id, v as AppRole)}
-                            disabled={updating === u.user_id}
+                            disabled={updating === u.user_id || !isAdmin}
                           >
                             <SelectTrigger>
                               <SelectValue />
