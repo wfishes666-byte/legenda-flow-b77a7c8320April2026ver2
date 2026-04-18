@@ -195,6 +195,16 @@ export default function StaffManagement() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label>Nama Panggilan</Label>
+                    <Input value={editProfile.nickname || ''} onChange={(e) => setEditProfile({ ...editProfile, nickname: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>NIK</Label>
+                    <Input value={editProfile.nik || ''} maxLength={16} onChange={(e) => setEditProfile({ ...editProfile, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label>Telepon</Label>
                     <Input value={editProfile.phone || ''} onChange={(e) => setEditProfile({ ...editProfile, phone: e.target.value })} />
                   </div>
@@ -206,6 +216,16 @@ export default function StaffManagement() {
                 <div className="space-y-2">
                   <Label>Alamat</Label>
                   <Input value={editProfile.address || ''} onChange={(e) => setEditProfile({ ...editProfile, address: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Tanggal Lahir</Label>
+                    <Input type="date" value={editProfile.date_of_birth || ''} onChange={(e) => setEditProfile({ ...editProfile, date_of_birth: e.target.value || null })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tanggal Bergabung</Label>
+                    <Input type="date" value={editProfile.join_date || ''} onChange={(e) => setEditProfile({ ...editProfile, join_date: e.target.value || null })} />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
