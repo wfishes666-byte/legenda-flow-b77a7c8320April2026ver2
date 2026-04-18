@@ -10,13 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarDays, Phone, MapPin, Briefcase, AlertTriangle, FileWarning, Clock, Banknote, Camera } from 'lucide-react';
+import { CalendarDays, Phone, MapPin, Briefcase, AlertTriangle, FileWarning, Clock, Banknote, Camera, Store, IdCard, UserCircle } from 'lucide-react';
 import { Badge as StatusBadge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 
 interface Profile {
   full_name: string;
+  nickname: string;
   phone: string;
   address: string;
   date_of_birth: string | null;
@@ -25,6 +27,10 @@ interface Profile {
   warning_letter_status: string;
   employment_status: string;
   contract_end_date: string | null;
+  nik: string;
+  join_date: string | null;
+  outlet_id: string | null;
+  outlet_name?: string;
 }
 
 interface CashbonRecord {
