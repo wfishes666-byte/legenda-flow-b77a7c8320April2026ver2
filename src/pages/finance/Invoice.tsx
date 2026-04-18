@@ -19,6 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Plus, X, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { CsvImportButton } from '@/components/CsvImportButton';
+import { ExportButtons } from '@/components/ExportButtons';
+import { formatRpExport } from '@/lib/exportUtils';
 
 interface CatalogItem {
   id: string;
