@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Beaker, Plus, Trash2 } from 'lucide-react';
+import { CsvImportButton } from '@/components/CsvImportButton';
+import { ExportButtons } from '@/components/ExportButtons';
 
 interface IngredientRow {
   name: string;
@@ -168,7 +170,52 @@ export default function MaterialControlPage() {
           <TabsContent value="recipes">
             {canEdit && (
               <Card className="glass-card mb-4">
-                <CardHeader><CardTitle className="text-lg">Input Resep</CardTitle></CardHeader>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-lg">Input Resep</CardTitle>
+                  <div className="flex gap-2 flex-wrap">
+                    <CsvImportButton
+                      entityLabel="Resep"
+                      headers={['menu_item_name', 'portions', 'ingredient_name', 'qty', 'unit']}
+                      templateFilename="template-resep"
+                      sampleRows={[
+                        ['Es Kopi Susu', 1, 'Kopi', 18, 'gram'],
+                        ['Es Kopi Susu', 1, 'Susu', 150, 'ml'],
+                        ['Es Kopi Susu', 1, 'Gula Aren', 30, 'ml'],
+                        ['Nasi Goreng', 1, 'Beras', 200, 'gram'],
+                        ['Nasi Goreng', 1, 'Telur', 1, 'butir'],
+                      ]}
+                      parseRow={(r) => {
+                        const menu = (r.menu_item_name || '').trim();
+                        const ingName = (r.ingredient_name || '').trim();
+                        if (!menu) throw new Error('menu_item_name wajib diisi');
+                        if (!ingName) throw new Error('ingredient_name wajib diisi');
+                        const qty = Number(r.qty);
+                        if (isNaN(qty) || qty <= 0) throw new Error('qty harus angka > 0');
+                        const portions = Number(r.portions) || 1;
+                        return { menu, portions, ingredient: { name: ingName, qty, unit: (r.unit || 'gram').trim() } };
+                      }}
+                      onImport={async (rows) => {
+                        // Group by menu_item_name
+                        const grouped = new Map<string, { portions: number; ingredients: any[] }>();
+                        rows.forEach((r) => {
+                          if (!grouped.has(r.menu)) grouped.set(r.menu, { portions: r.portions, ingredients: [] });
+                          grouped.get(r.menu)!.ingredients.push(r.ingredient);
+                        });
+                        const payload = Array.from(grouped.entries()).map(([menu, v]) => ({
+                          menu_item_name: menu,
+                          portions: v.portions,
+                          ingredients: v.ingredients,
+                          outlet_id: selectedOutlet,
+                        }));
+                        const { error } = await supabase.from('recipes').insert(payload);
+                        if (error) return { success: 0, failed: payload.length, message: error.message };
+                        return { success: payload.length, failed: 0, message: `${payload.length} resep dari ${rows.length} baris` };
+                      }}
+                      onImported={fetchData}
+                      helperText="Format: 1 baris per ingredient. Baris dengan menu_item_name sama akan dijadikan 1 resep."
+                    />
+                  </div>
+                </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRecipeSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -203,7 +250,20 @@ export default function MaterialControlPage() {
               </Card>
             )}
             <Card className="glass-card">
-              <CardHeader><CardTitle className="text-lg">Daftar Resep</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-3">
+                <CardTitle className="text-lg">Daftar Resep ({recipes.length})</CardTitle>
+                <ExportButtons
+                  filename="daftar-resep"
+                  title="Daftar Resep"
+                  orientation="landscape"
+                  columns={[
+                    { header: 'Menu', accessor: 'menu_item_name' },
+                    { header: 'Porsi', accessor: 'portions' },
+                    { header: 'Bahan', accessor: (r: any) => (r.ingredients as any[] || []).map((i: any) => `${i.name} ${i.qty}${i.unit}`).join('; ') },
+                  ]}
+                  rows={recipes}
+                />
+              </CardHeader>
               <CardContent className="space-y-3">
                 {recipes.map((r) => (
                   <div key={r.id} className="p-3 bg-muted/50 rounded-lg">
@@ -223,7 +283,38 @@ export default function MaterialControlPage() {
           <TabsContent value="sales">
             {canEdit && (
               <Card className="glass-card mb-4">
-                <CardHeader><CardTitle className="text-lg">Input Penjualan Harian</CardTitle></CardHeader>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-lg">Input Penjualan Harian</CardTitle>
+                  <div className="flex gap-2 flex-wrap">
+                    <CsvImportButton
+                      entityLabel="Penjualan"
+                      headers={['sale_date', 'menu_item_name', 'qty_sold']}
+                      templateFilename="template-penjualan-harian"
+                      sampleRows={[
+                        [new Date().toISOString().split('T')[0], 'Es Kopi Susu', 25],
+                        [new Date().toISOString().split('T')[0], 'Nasi Goreng', 12],
+                      ]}
+                      parseRow={(r) => {
+                        const date = (r.sale_date || '').trim();
+                        const menu = (r.menu_item_name || '').trim();
+                        const qty = Number(r.qty_sold);
+                        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('sale_date harus YYYY-MM-DD');
+                        if (!menu) throw new Error('menu_item_name wajib diisi');
+                        if (isNaN(qty) || qty <= 0) throw new Error('qty_sold harus angka > 0');
+                        return { sale_date: date, menu_item_name: menu, qty_sold: qty };
+                      }}
+                      onImport={async (rows) => {
+                        if (!user) return { success: 0, failed: rows.length, message: 'User tidak terautentikasi' };
+                        const payload = rows.map((r) => ({ ...r, recorded_by: user.id, outlet_id: selectedOutlet }));
+                        const { error } = await supabase.from('daily_sales').insert(payload);
+                        if (error) return { success: 0, failed: rows.length, message: error.message };
+                        return { success: rows.length, failed: 0 };
+                      }}
+                      onImported={fetchData}
+                      helperText="Format: sale_date (YYYY-MM-DD), menu_item_name, qty_sold"
+                    />
+                  </div>
+                </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSaleSubmit} className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 space-y-2">
@@ -246,7 +337,19 @@ export default function MaterialControlPage() {
               </Card>
             )}
             <Card className="glass-card">
-              <CardHeader><CardTitle className="text-lg">Riwayat Penjualan</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-3">
+                <CardTitle className="text-lg">Riwayat Penjualan</CardTitle>
+                <ExportButtons
+                  filename="riwayat-penjualan-menu"
+                  title="Riwayat Penjualan Menu"
+                  columns={[
+                    { header: 'Tanggal', accessor: 'sale_date' },
+                    { header: 'Menu', accessor: 'menu_item_name' },
+                    { header: 'Terjual', accessor: 'qty_sold' },
+                  ]}
+                  rows={sales}
+                />
+              </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">

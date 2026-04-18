@@ -19,6 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Plus, X, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { CsvImportButton } from '@/components/CsvImportButton';
+import { ExportButtons } from '@/components/ExportButtons';
+import { formatRpExport } from '@/lib/exportUtils';
 
 interface CatalogItem {
   id: string;
@@ -338,6 +341,21 @@ export default function InvoicePage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="ml-auto">
+                  <ExportButtons
+                    filename={`rekap-invoice-${filterMonth}`}
+                    title={`Rekap Invoice - ${filterMonth}`}
+                    subtitle={filterOutlet === 'all' ? 'Semua Outlet' : outlets.find(o => o.id === filterOutlet)?.name}
+                    orientation="landscape"
+                    columns={[
+                      { header: 'Tanggal', accessor: (r: any) => format(new Date(r.invoice_date), 'dd/MM/yyyy') },
+                      { header: 'Outlet', accessor: 'outlet_name' as any },
+                      { header: 'Item', accessor: (r: any) => (r.items || []).map((i: any) => `${i.qty}x ${i.item_name}`).join('; ') },
+                      { header: 'Total', accessor: (r: any) => formatRpExport(r.total) },
+                    ]}
+                    rows={invoices}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -384,7 +402,35 @@ export default function InvoicePage() {
           {/* ============ KATALOG ============ */}
           <TabsContent value="katalog" className="space-y-4">
             <Card className="glass-card">
-              <CardHeader><CardTitle className="text-base">{editingCat ? 'Edit Item' : 'Tambah Item Baru'}</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
+                <CardTitle className="text-base">{editingCat ? 'Edit Item' : 'Tambah Item Baru'}</CardTitle>
+                <div className="flex gap-2 flex-wrap">
+                  <CsvImportButton
+                    entityLabel="Item Katalog"
+                    headers={['name', 'unit', 'default_price']}
+                    templateFilename="template-katalog-item"
+                    sampleRows={[
+                      ['Ayam Potong', 'kg', 35000],
+                      ['Beras Premium', 'kg', 14000],
+                      ['Minyak Goreng', 'liter', 18000],
+                    ]}
+                    parseRow={(r) => {
+                      const name = (r.name || '').trim();
+                      if (!name) throw new Error('Kolom name wajib diisi');
+                      const price = Number(r.default_price);
+                      if (isNaN(price) || price < 0) throw new Error('default_price harus angka >= 0');
+                      return { name, unit: (r.unit || 'pcs').trim(), default_price: price };
+                    }}
+                    onImport={async (rows) => {
+                      const { error } = await supabase.from('item_catalog').insert(rows);
+                      if (error) return { success: 0, failed: rows.length, message: error.message };
+                      return { success: rows.length, failed: 0 };
+                    }}
+                    onImported={fetchCatalog}
+                    helperText="Format kolom: name, unit, default_price. Item akan ditambahkan sebagai baru."
+                  />
+                </div>
+              </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
                 <div><Label>Nama</Label><Input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="cth: Ayam Potong" /></div>
                 <div><Label>Satuan</Label><Input value={catUnit} onChange={(e) => setCatUnit(e.target.value)} placeholder="kg" /></div>
@@ -397,7 +443,20 @@ export default function InvoicePage() {
             </Card>
 
             <Card className="glass-card">
-              <CardContent className="pt-6">
+              <CardHeader className="flex flex-row items-center justify-between gap-3">
+                <CardTitle className="text-base">Daftar Katalog ({catalog.length})</CardTitle>
+                <ExportButtons
+                  filename="katalog-item"
+                  title="Katalog Item"
+                  columns={[
+                    { header: 'Nama', accessor: 'name' },
+                    { header: 'Satuan', accessor: 'unit' },
+                    { header: 'Harga Default', accessor: (r) => formatRpExport(Number(r.default_price)) },
+                  ]}
+                  rows={catalog}
+                />
+              </CardHeader>
+              <CardContent className="pt-2">
                 {catalog.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Belum ada item katalog.</p>
                 ) : (
@@ -452,7 +511,19 @@ export default function InvoicePage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card className="glass-card">
-                <CardHeader><CardTitle className="text-base">Per Outlet</CardTitle></CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between gap-3">
+                  <CardTitle className="text-base">Per Outlet</CardTitle>
+                  <ExportButtons
+                    filename={`ringkasan-invoice-per-outlet-${filterMonth}`}
+                    title={`Ringkasan Invoice per Outlet - ${filterMonth}`}
+                    columns={[
+                      { header: 'Outlet', accessor: (r: any) => r[0] },
+                      { header: 'Total', accessor: (r: any) => formatRpExport(r[1]) },
+                      { header: '%', accessor: (r: any) => (summary.grand > 0 ? ((r[1] / summary.grand) * 100).toFixed(1) + '%' : '0%') },
+                    ]}
+                    rows={summary.perOutlet}
+                  />
+                </CardHeader>
                 <CardContent>
                   {summary.perOutlet.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">Tidak ada data.</p>
@@ -476,7 +547,19 @@ export default function InvoicePage() {
               </Card>
 
               <Card className="glass-card">
-                <CardHeader><CardTitle className="text-base">Per Item</CardTitle></CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between gap-3">
+                  <CardTitle className="text-base">Per Item</CardTitle>
+                  <ExportButtons
+                    filename={`ringkasan-invoice-per-item-${filterMonth}`}
+                    title={`Ringkasan Invoice per Item - ${filterMonth}`}
+                    columns={[
+                      { header: 'Item', accessor: (r: any) => r[0] },
+                      { header: 'Qty', accessor: (r: any) => `${r[1].qty} ${r[1].unit}` },
+                      { header: 'Total', accessor: (r: any) => formatRpExport(r[1].total) },
+                    ]}
+                    rows={summary.perItem}
+                  />
+                </CardHeader>
                 <CardContent>
                   {summary.perItem.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">Tidak ada data.</p>

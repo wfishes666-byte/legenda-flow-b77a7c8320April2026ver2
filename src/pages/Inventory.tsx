@@ -15,6 +15,7 @@ import { Plus, Trash2, Save, ShoppingCart, Download, FileText } from 'lucide-rea
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { CsvImportButton } from '@/components/CsvImportButton';
 
 interface StockRow {
   item_name: string;
@@ -176,16 +177,50 @@ export default function InventoryPage() {
             <h1 className="text-2xl md:text-3xl font-bold font-sans">Stok & Inventaris</h1>
             <p className="text-muted-foreground mt-1">Input stok bahan baku harian</p>
           </div>
-          {canManage && (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExportCSV}>
-                <Download className="w-4 h-4 mr-1" /> CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportPDF}>
-                <FileText className="w-4 h-4 mr-1" /> PDF
-              </Button>
-            </div>
-          )}
+          <div className="flex gap-2 flex-wrap">
+            <CsvImportButton
+              entityLabel="Stok Harian"
+              headers={['record_date', 'item_name', 'starting_stock', 'incoming_stock', 'ending_stock', 'minimum_threshold']}
+              templateFilename="template-stok-harian"
+              sampleRows={[
+                [new Date().toISOString().split('T')[0], 'Kopi Arabika', 5, 10, 12, 5],
+                [new Date().toISOString().split('T')[0], 'Susu UHT', 20, 0, 15, 10],
+              ]}
+              parseRow={(r) => {
+                const date = (r.record_date || '').trim();
+                const name = (r.item_name || '').trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('record_date harus YYYY-MM-DD');
+                if (!name) throw new Error('item_name wajib diisi');
+                return {
+                  record_date: date,
+                  item_name: name,
+                  starting_stock: Number(r.starting_stock) || 0,
+                  incoming_stock: Number(r.incoming_stock) || 0,
+                  ending_stock: Number(r.ending_stock) || 0,
+                  minimum_threshold: Number(r.minimum_threshold) || 5,
+                };
+              }}
+              onImport={async (rows) => {
+                if (!user || !selectedOutlet) return { success: 0, failed: rows.length, message: 'Pilih outlet terlebih dahulu' };
+                const payload = rows.map((r) => ({ ...r, user_id: user.id, outlet_id: selectedOutlet }));
+                const { error } = await supabase.from('inventory').insert(payload);
+                if (error) return { success: 0, failed: rows.length, message: error.message };
+                return { success: rows.length, failed: 0 };
+              }}
+              onImported={fetchInventory}
+              helperText="Format: record_date (YYYY-MM-DD), item_name, starting_stock, incoming_stock, ending_stock, minimum_threshold. Outlet diambil dari Outlet yang sedang dipilih."
+            />
+            {canManage && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                  <Download className="w-4 h-4 mr-1" /> CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                  <FileText className="w-4 h-4 mr-1" /> PDF
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {toBuyList.length > 0 && (
