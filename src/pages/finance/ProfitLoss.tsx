@@ -172,19 +172,41 @@ export default function ProfitLossPage() {
     }
   };
 
-  // Aggregations for LR tab
+  // Aggregations for LR tab — only expenses for selected outlet
+  const lrExpenseRows = useMemo(
+    () => reportGroups.filter((g) => !selectedOutlet || g.outlet_id === selectedOutlet).flatMap((g) => g.expenses),
+    [reportGroups, selectedOutlet],
+  );
   const totalIncome = incomeData.offline + incomeData.online;
   const expensesByCategory: Record<string, number> = {};
   let totalExpenses = 0;
-  expenseRows.forEach((row) => {
+  lrExpenseRows.forEach((row) => {
     const effective = pendingChanges[row.id] ?? row.category ?? 'Belum Dikategorikan';
     expensesByCategory[effective] = (expensesByCategory[effective] || 0) + row.amount;
     totalExpenses += row.amount;
   });
   const netProfit = totalIncome - totalExpenses;
   const formatRp = (v: number) => `Rp ${(v || 0).toLocaleString('id-ID')}`;
-
   const expenseCategories = categories.filter((c) => c.type === 'expense');
+
+  // Filter groups for Input Akun tab by chip
+  const filteredGroups = useMemo(
+    () => reportGroups.filter((g) => inputOutletFilter === 'all' || g.outlet_id === inputOutletFilter),
+    [reportGroups, inputOutletFilter],
+  );
+
+  const isRowAssigned = (row: ExpenseRow) => {
+    const eff = pendingChanges[row.id] ?? row.category;
+    return !!(eff && eff !== 'Lain-lain');
+  };
+  const isGroupFullyAssigned = (g: ReportGroup) =>
+    g.expenses.length > 0 && g.expenses.every(isRowAssigned);
+
+  const assignedGroups = filteredGroups.filter((g) => g.expenses.length > 0 && isGroupFullyAssigned(g));
+  const unassignedGroups = filteredGroups.filter((g) => g.expenses.length === 0 || !isGroupFullyAssigned(g));
+  const uncategorizedCount = reportGroups.flatMap((g) => g.expenses).filter((r) => !isRowAssigned(r)).length;
+
+  const toggleGroup = (id: string) => setOpenGroups((p) => ({ ...p, [id]: !p[id] }));
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -215,10 +237,6 @@ export default function ProfitLossPage() {
     });
     doc.save(`laba-rugi-${month}.pdf`);
   };
-
-  const uncategorizedCount = expenseRows.filter(
-    (r) => !(pendingChanges[r.id] ?? r.category)
-  ).length;
 
   return (
     <AppLayout>
