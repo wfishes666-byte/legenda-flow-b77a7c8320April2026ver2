@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import ThemeToggle from './ThemeToggle';
 
 interface NavItem {
   to: string;
@@ -141,8 +142,8 @@ export default function AppSidebar() {
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="p-6 border-b border-sidebar-border text-black bg-black">
-          <h1 className="text-xl font-bold text-primary-foreground font-sans">
+        <div className="p-6 border-b border-sidebar-border bg-sidebar-accent/30">
+          <h1 className="text-xl font-bold text-sidebar-primary font-heading">
             Dua Legenda
           </h1>
           <p className="text-xs text-sidebar-foreground/60 mt-1">Business Management</p>
@@ -208,7 +209,8 @@ export default function AppSidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-sidebar-border space-y-1">
+          <ThemeToggle variant="sidebar" />
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10"
