@@ -251,15 +251,6 @@ export default function PerformanceReviewPage() {
                   <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Karyawan
                   </Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Cari nama karyawan..."
-                      className="pl-9"
-                    />
-                  </div>
                   <Select value={employeeId} onValueChange={setEmployeeId}>
                     <SelectTrigger><SelectValue placeholder={month && year ? '-- Pilih --' : 'Pilih bulan & tahun dahulu'} /></SelectTrigger>
                     <SelectContent>
