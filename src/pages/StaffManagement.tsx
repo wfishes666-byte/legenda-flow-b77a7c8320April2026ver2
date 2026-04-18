@@ -115,6 +115,8 @@ export default function StaffManagement() {
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="p-4 font-medium">Nama</th>
                     <th className="p-4 font-medium">Jabatan</th>
+                    <th className="p-4 font-medium">Cabang</th>
+                    <th className="p-4 font-medium">Telepon</th>
                     <th className="p-4 font-medium">Poin Disiplin</th>
                     <th className="p-4 font-medium">Status SP</th>
                     <th className="p-4 font-medium">Status</th>
@@ -122,10 +124,17 @@ export default function StaffManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {profiles.map((p) => (
+                  {profiles.map((p) => {
+                    const outletName = outlets.find((o) => o.id === p.outlet_id)?.name || '-';
+                    return (
                     <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="p-4 font-medium">{p.full_name || '-'}</td>
+                      <td className="p-4 font-medium">
+                        <div>{p.full_name || '-'}</div>
+                        {p.nickname && <div className="text-xs text-muted-foreground">({p.nickname})</div>}
+                      </td>
                       <td className="p-4">{p.job_title || '-'}</td>
+                      <td className="p-4">{outletName}</td>
+                      <td className="p-4 text-muted-foreground">{p.phone || '-'}</td>
                       <td className="p-4">
                         <Badge variant={p.discipline_points > 3 ? 'destructive' : 'secondary'}>
                           {p.discipline_points}
@@ -164,10 +173,11 @@ export default function StaffManagement() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                   {profiles.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">Belum ada karyawan.</td>
+                      <td colSpan={8} className="p-8 text-center text-muted-foreground">Belum ada karyawan.</td>
                     </tr>
                   )}
                 </tbody>
