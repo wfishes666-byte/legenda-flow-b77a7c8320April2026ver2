@@ -568,8 +568,8 @@ export default function FinancialReport() {
                   </div>
                   );
                 })}
-              </CardContent>
-            </Card>
+              </div>
+            </CollapsibleSection>
 
             {/* Catatan + Action */}
             <Card className="glass-card">
