@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarCheck, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { CalendarCheck, ChevronLeft, ChevronRight, Save, MapPin, Plus, Crosshair } from 'lucide-react';
 import { useOutlets } from '@/hooks/useOutlets';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
@@ -49,6 +50,8 @@ interface RowState {
 }
 
 export default function AttendancePage() {
+  const { role } = useAuth();
+  const isManagement = role === 'management';
   const { toast } = useToast();
   const { outlets, selectedOutlet, setSelectedOutlet, loading: outletsLoading } = useOutlets();
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -182,6 +185,7 @@ export default function AttendancePage() {
             <TabsTrigger value="input">Input Absensi</TabsTrigger>
             <TabsTrigger value="recap">Rekap Bulanan</TabsTrigger>
             <TabsTrigger value="logs">Log Absen Selfie</TabsTrigger>
+            {isManagement && <TabsTrigger value="outlets">Kelola Outlet</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="input" className="space-y-4">
@@ -359,6 +363,12 @@ export default function AttendancePage() {
           <TabsContent value="logs">
             <SelfieLogsTab outletId={selectedOutlet} profiles={outletProfiles} />
           </TabsContent>
+
+          {isManagement && (
+            <TabsContent value="outlets">
+              <OutletsManagementTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>
@@ -542,6 +552,208 @@ function SelfieLogsTab({ outletId, profiles }: { outletId: string; profiles: Pro
             </tbody>
           </table>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface OutletRow {
+  id: string;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  radius_meters: number | null;
+  dirty?: boolean;
+  isNew?: boolean;
+}
+
+function OutletsManagementTab() {
+  const { toast } = useToast();
+  const [outlets, setOutlets] = useState<OutletRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('outlets')
+      .select('id, name, latitude, longitude, radius_meters')
+      .order('name');
+    setOutlets((data || []) as OutletRow[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const updateField = (id: string, patch: Partial<OutletRow>) => {
+    setOutlets((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch, dirty: true } : o)));
+  };
+
+  const useMyLocation = (id: string) => {
+    if (!navigator.geolocation) {
+      toast({ title: 'Browser tidak mendukung Geolocation', variant: 'destructive' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        updateField(id, {
+          latitude: Number(pos.coords.latitude.toFixed(7)),
+          longitude: Number(pos.coords.longitude.toFixed(7)),
+        });
+        toast({ title: 'Lokasi diisi', description: 'Jangan lupa simpan perubahan.' });
+      },
+      (err) => toast({ title: 'Gagal mengambil lokasi', description: err.message, variant: 'destructive' }),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const saveOutlet = async (o: OutletRow) => {
+    if (!o.name.trim()) {
+      toast({ title: 'Nama outlet wajib diisi', variant: 'destructive' });
+      return;
+    }
+    setSavingId(o.id);
+    const payload = {
+      name: o.name.trim(),
+      latitude: o.latitude,
+      longitude: o.longitude,
+      radius_meters: o.radius_meters ?? 100,
+    };
+    const res = o.isNew
+      ? await supabase.from('outlets').insert(payload).select().single()
+      : await supabase.from('outlets').update(payload).eq('id', o.id).select().single();
+    setSavingId(null);
+    if (res.error) {
+      toast({ title: 'Gagal menyimpan', description: res.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Outlet tersimpan' });
+    await load();
+  };
+
+  const addNewRow = () => {
+    const tempId = `new-${Date.now()}`;
+    setOutlets((prev) => [
+      ...prev,
+      { id: tempId, name: '', latitude: null, longitude: null, radius_meters: 100, isNew: true, dirty: true },
+    ]);
+  };
+
+  return (
+    <Card className="glass-card">
+      <CardContent className="p-4 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 className="font-semibold flex items-center gap-2"><MapPin className="w-4 h-4" /> Koordinat & Radius Outlet</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Atur titik pusat (latitude/longitude) dan radius (meter) untuk validasi check-in. Jika di luar radius, sistem akan memberi peringatan namun absen tetap diterima.
+            </p>
+          </div>
+          <Button onClick={addNewRow} size="sm">
+            <Plus className="w-4 h-4 mr-2" /> Tambah Outlet
+          </Button>
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Memuat...</p>
+        ) : outlets.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">Belum ada outlet. Klik "Tambah Outlet".</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[900px]">
+              <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                <tr className="text-left">
+                  <th className="p-3">Nama Outlet</th>
+                  <th className="p-3">Latitude</th>
+                  <th className="p-3">Longitude</th>
+                  <th className="p-3">Radius (m)</th>
+                  <th className="p-3">Peta</th>
+                  <th className="p-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {outlets.map((o) => {
+                  const hasCoords = o.latitude != null && o.longitude != null;
+                  return (
+                    <tr key={o.id} className="border-t border-border/50 hover:bg-muted/20">
+                      <td className="p-3">
+                        <Input
+                          value={o.name}
+                          onChange={(e) => updateField(o.id, { name: e.target.value })}
+                          placeholder="Nama outlet"
+                          className="min-w-[180px]"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.0000001"
+                          value={o.latitude ?? ''}
+                          onChange={(e) => updateField(o.id, { latitude: e.target.value === '' ? null : parseFloat(e.target.value) })}
+                          placeholder="-6.2088"
+                          className="w-36"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          step="0.0000001"
+                          value={o.longitude ?? ''}
+                          onChange={(e) => updateField(o.id, { longitude: e.target.value === '' ? null : parseFloat(e.target.value) })}
+                          placeholder="106.8456"
+                          className="w-36"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          min={10}
+                          value={o.radius_meters ?? 100}
+                          onChange={(e) => updateField(o.id, { radius_meters: parseInt(e.target.value) || 100 })}
+                          className="w-24"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => useMyLocation(o.id)}
+                            title="Gunakan lokasi saya"
+                          >
+                            <Crosshair className="w-3.5 h-3.5" />
+                          </Button>
+                          {hasCoords && (
+                            <Button asChild type="button" variant="outline" size="sm">
+                              <a
+                                href={`https://www.google.com/maps?q=${o.latitude},${o.longitude}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <MapPin className="w-3.5 h-3.5" />
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3 text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => saveOutlet(o)}
+                          disabled={savingId === o.id || !o.dirty}
+                        >
+                          <Save className="w-3.5 h-3.5 mr-1" />
+                          {savingId === o.id ? 'Menyimpan...' : 'Simpan'}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
