@@ -5,7 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth, AppRole } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { AppSettingsProvider } from "@/hooks/useAppSettings";
 import Login from "./pages/Login";
+import SettingsPage from "./pages/Settings";
 import ProfilePage from "./pages/Profile";
 import DashboardPage from "./pages/Dashboard";
 import StaffManagement from "./pages/StaffManagement";
@@ -91,6 +93,9 @@ function AppRoutes() {
       {/* Marketing */}
       <Route path="/marketing/content-plan" element={<ProtectedRoute allowedRoles={['management', 'pic']}><ContentPlanPage /></ProtectedRoute>} />
 
+      {/* Settings (admin only) */}
+      <Route path="/settings" element={<ProtectedRoute allowedRoles={['management']}><SettingsPage /></ProtectedRoute>} />
+
       {/* Legacy redirects */}
       <Route path="/financial-report" element={<Navigate to="/daily-report" replace />} />
       <Route path="/inventory" element={<Navigate to="/inventory/daily-stock" replace />} />
@@ -104,15 +109,17 @@ function AppRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AppSettingsProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AppSettingsProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

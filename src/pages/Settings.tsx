@@ -1,0 +1,227 @@
+import { useRef, useState } from 'react';
+import AppLayout from '@/components/AppLayout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAppSettings, FONT_OPTIONS, hexToHsl, hslToHex, FontFamilyKey } from '@/hooks/useAppSettings';
+import { useAuth } from '@/hooks/useAuth';
+import { Navigate } from 'react-router-dom';
+import { Settings as SettingsIcon, RotateCcw, Upload, Image as ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
+
+function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="color"
+        value={hslToHex(value)}
+        onChange={(e) => onChange(hexToHsl(e.target.value))}
+        className="h-10 w-14 rounded-md border border-border bg-transparent cursor-pointer"
+      />
+      <div className="flex-1">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground font-mono">hsl({value})</p>
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  const { role } = useAuth();
+  const { settings, updateSetting, resetSettings } = useAppSettings();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  if (role !== 'management') {
+    return <Navigate to="/profile" replace />;
+  }
+
+  const handleLogoUpload = async (file: File) => {
+    if (file.size > 1.5 * 1024 * 1024) {
+      toast.error('Ukuran logo maksimal 1.5MB');
+      return;
+    }
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateSetting('customLogoUrl', reader.result as string);
+        toast.success('Logo berhasil diperbarui');
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        toast.error('Gagal membaca file');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error('Gagal mengunggah logo');
+      setUploading(false);
+    }
+  };
+
+  return (
+    <AppLayout>
+      <div className="max-w-4xl space-y-6">
+        <div className="flex items-center gap-3">
+          <SettingsIcon className="w-7 h-7 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Pengaturan Tampilan</h1>
+            <p className="text-sm text-muted-foreground">Kustomisasi font, warna, logo, dan elemen visual aplikasi.</p>
+          </div>
+        </div>
+
+        {/* Typography */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tipografi</CardTitle>
+            <CardDescription>Atur jenis font dan skala ukuran teks.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-2">
+              <Label>Jenis Font</Label>
+              <Select
+                value={settings.fontFamily}
+                onValueChange={(v) => updateSetting('fontFamily', v as FontFamilyKey)}
+              >
+                <SelectTrigger className="max-w-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FONT_OPTIONS.map((f) => (
+                    <SelectItem key={f.key} value={f.key} style={{ fontFamily: f.stack }}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label>Skala Ukuran Font</Label>
+                <span className="text-sm text-muted-foreground">{Math.round(settings.fontScale * 100)}%</span>
+              </div>
+              <Slider
+                value={[settings.fontScale]}
+                min={0.85}
+                max={1.25}
+                step={0.05}
+                onValueChange={(v) => updateSetting('fontScale', v[0])}
+              />
+              <p className="text-xs text-muted-foreground">Berlaku untuk seluruh aplikasi.</p>
+            </div>
+
+            <div className="rounded-lg border border-border bg-muted/30 p-4">
+              <p className="text-xs text-muted-foreground mb-2">Pratinjau</p>
+              <h3 className="text-2xl font-bold mb-1">Dua Legenda Management</h3>
+              <p className="text-base">Cepat, rapi, dan terkontrol — tampilan teks Anda akan tampak seperti ini.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Colors */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Warna Brand</CardTitle>
+            <CardDescription>Atur warna utama dan sidebar untuk mode terang & gelap.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid sm:grid-cols-2 gap-5">
+            <ColorPicker
+              label="Primary (Mode Terang)"
+              value={settings.primaryLight}
+              onChange={(v) => updateSetting('primaryLight', v)}
+            />
+            <ColorPicker
+              label="Primary (Mode Gelap)"
+              value={settings.primaryDark}
+              onChange={(v) => updateSetting('primaryDark', v)}
+            />
+            <ColorPicker
+              label="Sidebar (Mode Terang)"
+              value={settings.sidebarLight}
+              onChange={(v) => updateSetting('sidebarLight', v)}
+            />
+            <ColorPicker
+              label="Sidebar (Mode Gelap)"
+              value={settings.sidebarDark}
+              onChange={(v) => updateSetting('sidebarDark', v)}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Logo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Logo Perusahaan</CardTitle>
+            <CardDescription>Ganti logo yang muncul di sidebar (mendukung kampanye seasonal).</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-32 rounded-lg border border-border bg-sidebar flex items-center justify-center overflow-hidden">
+                {settings.customLogoUrl ? (
+                  <img src={settings.customLogoUrl} alt="Logo" className="max-h-16 max-w-28 object-contain" />
+                ) : (
+                  <ImageIcon className="w-8 h-8 text-sidebar-foreground/40" />
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleLogoUpload(f);
+                  }}
+                />
+                <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} variant="outline">
+                  <Upload className="w-4 h-4 mr-2" />
+                  {settings.customLogoUrl ? 'Ganti Logo' : 'Unggah Logo'}
+                </Button>
+                {settings.customLogoUrl && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateSetting('customLogoUrl', null)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    Kembalikan logo default
+                  </Button>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">PNG/SVG transparan, maksimal 1.5MB.</p>
+          </CardContent>
+        </Card>
+
+        {/* Display options */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tampilan Lainnya</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Tampilkan ornamen latar (macan & naga)</Label>
+                <p className="text-xs text-muted-foreground">Matikan untuk tampilan minimalis.</p>
+              </div>
+              <Switch
+                checked={settings.showBgArtwork}
+                onCheckedChange={(v) => updateSetting('showBgArtwork', v)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => { resetSettings(); toast.success('Pengaturan dikembalikan ke default'); }}>
+            <RotateCcw className="w-4 h-4 mr-2" /> Kembalikan ke Default
+          </Button>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}

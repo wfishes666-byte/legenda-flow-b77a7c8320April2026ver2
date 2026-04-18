@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   Activity,
   Camera,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import { useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import ThemeToggle from './ThemeToggle';
 import logoKop from '@/assets/logo-kop.png';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface NavItem {
   to: string;
@@ -108,10 +110,19 @@ const navGroups: NavGroup[] = [
       { to: '/marketing/content-plan', icon: Megaphone, label: 'Content Plan', roles: ['management', 'pic'] },
     ],
   },
+  {
+    label: 'Pengaturan',
+    icon: SettingsIcon,
+    roles: ['management'],
+    items: [
+      { to: '/settings', icon: SettingsIcon, label: 'Pengaturan Tampilan', roles: ['management'] },
+    ],
+  },
 ];
 
 export default function AppSidebar() {
   const { role, signOut } = useAuth();
+  const { settings } = useAppSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -145,8 +156,8 @@ export default function AppSidebar() {
       >
         <div className="p-6 border-b border-sidebar-border bg-sidebar-accent/30 flex flex-col items-center">
           <img
-            src={logoKop}
-            alt="Dua Legenda"
+            src={settings.customLogoUrl || logoKop}
+            alt="Logo Perusahaan"
             className="max-h-16 w-auto object-contain"
           />
           <p className="text-xs text-sidebar-foreground/60 mt-2">Business Management</p>
