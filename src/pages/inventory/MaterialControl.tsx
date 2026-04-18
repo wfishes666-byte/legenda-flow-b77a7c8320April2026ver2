@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Beaker, Plus, Trash2 } from 'lucide-react';
+import { CsvImportButton } from '@/components/CsvImportButton';
+import { ExportButtons } from '@/components/ExportButtons';
 
 interface IngredientRow {
   name: string;
