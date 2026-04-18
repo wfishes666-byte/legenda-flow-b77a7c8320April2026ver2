@@ -59,7 +59,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'Personalia',
     icon: Users,
-    roles: ['management', 'pic', 'crew', 'stockman', 'staff'],
+    roles: ['admin', 'management', 'pic', 'crew', 'stockman', 'staff'],
     items: [
       { to: '/attendance/check-in', icon: Camera, label: 'Absen Sekarang (Selfie)', roles: ['management', 'pic', 'crew', 'stockman', 'staff'] },
       { to: '/personalia/staff', icon: Users, label: 'Data Karyawan', roles: ['management', 'pic'] },
@@ -69,7 +69,7 @@ const navGroups: NavGroup[] = [
       { to: '/personalia/punishment', icon: AlertTriangle, label: 'Punishment & SP', roles: ['management', 'pic'] },
       { to: '/personalia/leave', icon: CalendarDays, label: 'Verifikasi Cuti', roles: ['management', 'pic'] },
       { to: '/personalia/payroll', icon: DollarSign, label: 'Payroll', roles: ['management', 'pic'] },
-      { to: '/personalia/roles', icon: ShieldCheck, label: 'Kelola Role & Akses', roles: ['management'] },
+      { to: '/personalia/roles', icon: ShieldCheck, label: 'Kelola Role & Akses', roles: ['admin', 'management'] },
       { to: '/activity-log', icon: Activity, label: 'Log Kegiatan', roles: ['management'] },
       { to: '/profile', icon: UserCircle, label: 'Profil Saya', roles: ['management', 'pic', 'crew', 'stockman', 'staff'] },
     ],

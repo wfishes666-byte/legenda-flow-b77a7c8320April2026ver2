@@ -74,7 +74,7 @@ function AppRoutes() {
       <Route path="/personalia/punishment" element={<ProtectedRoute allowedRoles={['management', 'pic']}><PunishmentPage /></ProtectedRoute>} />
       <Route path="/personalia/leave" element={<ProtectedRoute allowedRoles={['management', 'pic']}><LeaveVerificationPage /></ProtectedRoute>} />
       <Route path="/personalia/payroll" element={<ProtectedRoute allowedRoles={['management', 'pic']}><PayrollPage /></ProtectedRoute>} />
-      <Route path="/personalia/roles" element={<ProtectedRoute allowedRoles={['management']}><RoleManagementPage /></ProtectedRoute>} />
+      <Route path="/personalia/roles" element={<ProtectedRoute allowedRoles={['admin', 'management']}><RoleManagementPage /></ProtectedRoute>} />
       <Route path="/activity-log" element={<ProtectedRoute allowedRoles={['management']}><ActivityLogPage /></ProtectedRoute>} />
 
       {/* Finance */}
