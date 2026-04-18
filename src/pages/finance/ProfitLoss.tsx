@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
 import OutletSelector from '@/components/OutletSelector';
@@ -6,22 +6,37 @@ import { useOutlets } from '@/hooks/useOutlets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, TrendingDown, Download, Save, Plus, X } from 'lucide-react';
-import { format, endOfMonth } from 'date-fns';
+import { TrendingUp, Download, Save, Plus, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { format, endOfMonth, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import ReportSection from '@/components/finance/ReportSection';
 
 interface ExpenseRow {
   id: string;
   description: string;
   amount: number;
+  qty: number;
+  unit_price: number;
   category: string | null;
+  report_id: string;
+}
+
+interface ReportGroup {
+  report_id: string;
   report_date: string;
+  outlet_id: string | null;
+  outlet_name: string;
+  created_at: string;
+  expenses: ExpenseRow[];
+  income: number;
 }
 
 interface PLCategory {
@@ -35,11 +50,13 @@ export default function ProfitLossPage() {
   const { outlets, selectedOutlet, setSelectedOutlet } = useOutlets();
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [incomeData, setIncomeData] = useState({ offline: 0, online: 0 });
-  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
+  const [reportGroups, setReportGroups] = useState<ReportGroup[]>([]);
   const [categories, setCategories] = useState<PLCategory[]>([]);
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [inputOutletFilter, setInputOutletFilter] = useState<string>('all');
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [balancingRows, setBalancingRows] = useState<{ id: string; label: string; amount: number }[]>([
     { id: '1', label: 'Kas Tunai Aktual', amount: 0 },
     { id: '2', label: 'Transfer Aktual', amount: 0 },
@@ -54,46 +71,69 @@ export default function ProfitLossPage() {
     const startDate = `${month}-01`;
     const endDate = format(endOfMonth(new Date(startDate)), 'yyyy-MM-dd');
 
-    let query = supabase
+    // For Laporan L/R: only selected outlet
+    let lrQuery = supabase
       .from('financial_reports')
-      .select('id, daily_offline_income, online_delivery_sales, report_date')
+      .select('id, daily_offline_income, online_delivery_sales')
       .gte('report_date', startDate)
       .lte('report_date', endDate);
-    if (selectedOutlet) query = query.eq('outlet_id', selectedOutlet);
-    const { data: reports } = await query;
+    if (selectedOutlet) lrQuery = lrQuery.eq('outlet_id', selectedOutlet);
+    const { data: lrReports } = await lrQuery;
 
     let offline = 0, online = 0;
-    const reportMap: Record<string, string> = {};
-    reports?.forEach((r) => {
+    lrReports?.forEach((r) => {
       offline += r.daily_offline_income || 0;
       online += r.online_delivery_sales || 0;
-      reportMap[r.id] = r.report_date;
     });
     setIncomeData({ offline, online });
 
-    const reportIds = Object.keys(reportMap);
+    // For Input Akun: ALL outlets in the month
+    const { data: allReports } = await supabase
+      .from('financial_reports')
+      .select('id, daily_offline_income, online_delivery_sales, report_date, outlet_id, created_at')
+      .gte('report_date', startDate)
+      .lte('report_date', endDate)
+      .order('report_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    const outletMap = Object.fromEntries(outlets.map((o) => [o.id, o.name]));
+    const groups: ReportGroup[] = (allReports || []).map((r: any) => ({
+      report_id: r.id,
+      report_date: r.report_date,
+      outlet_id: r.outlet_id,
+      outlet_name: r.outlet_id ? (outletMap[r.outlet_id] || 'Tanpa Outlet') : 'Tanpa Outlet',
+      created_at: r.created_at,
+      income: (r.daily_offline_income || 0) + (r.online_delivery_sales || 0),
+      expenses: [],
+    }));
+
+    const reportIds = groups.map((g) => g.report_id);
     if (reportIds.length > 0) {
       const { data: expenses } = await supabase
         .from('expense_items')
-        .select('id, description, amount, category, report_id')
+        .select('id, description, amount, qty, unit_price, category, report_id')
         .in('report_id', reportIds);
-      const rows: ExpenseRow[] = (expenses || []).map((e: any) => ({
-        id: e.id,
-        description: e.description,
-        amount: e.amount || 0,
-        category: e.category,
-        report_date: reportMap[e.report_id] || '',
-      }));
-      rows.sort((a, b) => a.report_date.localeCompare(b.report_date));
-      setExpenseRows(rows);
-    } else {
-      setExpenseRows([]);
+      const expByReport: Record<string, ExpenseRow[]> = {};
+      (expenses || []).forEach((e: any) => {
+        const row: ExpenseRow = {
+          id: e.id,
+          description: e.description,
+          amount: e.amount || 0,
+          qty: e.qty || 1,
+          unit_price: e.unit_price || 0,
+          category: e.category,
+          report_id: e.report_id,
+        };
+        (expByReport[e.report_id] ||= []).push(row);
+      });
+      groups.forEach((g) => { g.expenses = expByReport[g.report_id] || []; });
     }
+    setReportGroups(groups);
     setPendingChanges({});
   };
 
   useEffect(() => { fetchCategories(); }, []);
-  useEffect(() => { fetchData(); }, [month, selectedOutlet]);
+  useEffect(() => { fetchData(); }, [month, selectedOutlet, outlets]);
 
   const handleCategoryChange = (id: string, category: string) => {
     setPendingChanges((prev) => ({ ...prev, [id]: category }));
@@ -133,19 +173,41 @@ export default function ProfitLossPage() {
     }
   };
 
-  // Aggregations for LR tab
+  // Aggregations for LR tab — only expenses for selected outlet
+  const lrExpenseRows = useMemo(
+    () => reportGroups.filter((g) => !selectedOutlet || g.outlet_id === selectedOutlet).flatMap((g) => g.expenses),
+    [reportGroups, selectedOutlet],
+  );
   const totalIncome = incomeData.offline + incomeData.online;
   const expensesByCategory: Record<string, number> = {};
   let totalExpenses = 0;
-  expenseRows.forEach((row) => {
+  lrExpenseRows.forEach((row) => {
     const effective = pendingChanges[row.id] ?? row.category ?? 'Belum Dikategorikan';
     expensesByCategory[effective] = (expensesByCategory[effective] || 0) + row.amount;
     totalExpenses += row.amount;
   });
   const netProfit = totalIncome - totalExpenses;
   const formatRp = (v: number) => `Rp ${(v || 0).toLocaleString('id-ID')}`;
-
   const expenseCategories = categories.filter((c) => c.type === 'expense');
+
+  // Filter groups for Input Akun tab by chip
+  const filteredGroups = useMemo(
+    () => reportGroups.filter((g) => inputOutletFilter === 'all' || g.outlet_id === inputOutletFilter),
+    [reportGroups, inputOutletFilter],
+  );
+
+  const isRowAssigned = (row: ExpenseRow) => {
+    const eff = pendingChanges[row.id] ?? row.category;
+    return !!(eff && eff !== 'Lain-lain');
+  };
+  const isGroupFullyAssigned = (g: ReportGroup) =>
+    g.expenses.length > 0 && g.expenses.every(isRowAssigned);
+
+  const assignedGroups = filteredGroups.filter((g) => g.expenses.length > 0 && isGroupFullyAssigned(g));
+  const unassignedGroups = filteredGroups.filter((g) => g.expenses.length === 0 || !isGroupFullyAssigned(g));
+  const uncategorizedCount = reportGroups.flatMap((g) => g.expenses).filter((r) => !isRowAssigned(r)).length;
+
+  const toggleGroup = (id: string) => setOpenGroups((p) => ({ ...p, [id]: !p[id] }));
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -176,10 +238,6 @@ export default function ProfitLossPage() {
     });
     doc.save(`laba-rugi-${month}.pdf`);
   };
-
-  const uncategorizedCount = expenseRows.filter(
-    (r) => !(pendingChanges[r.id] ?? r.category)
-  ).length;
 
   return (
     <AppLayout>
@@ -219,60 +277,68 @@ export default function ProfitLossPage() {
               </CardContent>
             </Card>
 
-            <Card className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">
-                  Pemilahan Pengeluaran ({expenseRows.length} item)
-                </CardTitle>
-                <Button onClick={handleSaveAll} disabled={saving || Object.keys(pendingChanges).length === 0}>
-                  <Save className="w-4 h-4 mr-1" />
-                  {saving ? 'Menyimpan...' : `Simpan (${Object.keys(pendingChanges).length})`}
+            {/* Outlet filter chips */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant={inputOutletFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setInputOutletFilter('all')}
+              >
+                Semua
+              </Button>
+              {outlets.map((o) => (
+                <Button
+                  key={o.id}
+                  size="sm"
+                  variant={inputOutletFilter === o.id ? 'default' : 'outline'}
+                  onClick={() => setInputOutletFilter(o.id)}
+                >
+                  {o.name}
                 </Button>
-              </CardHeader>
-              <CardContent>
-                {expenseRows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Belum ada pengeluaran pada periode ini.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-28">Tanggal</TableHead>
-                        <TableHead>Deskripsi</TableHead>
-                        <TableHead className="text-right w-36">Jumlah</TableHead>
-                        <TableHead className="w-64">Akun / Kategori</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {expenseRows.map((row) => {
-                        const current = pendingChanges[row.id] ?? row.category ?? '';
-                        const isPending = pendingChanges[row.id] !== undefined;
-                        return (
-                          <TableRow key={row.id} className={isPending ? 'bg-primary/5' : ''}>
-                            <TableCell className="text-xs">{row.report_date}</TableCell>
-                            <TableCell className="text-sm">{row.description}</TableCell>
-                            <TableCell className="text-right font-medium">{formatRp(row.amount)}</TableCell>
-                            <TableCell>
-                              <Select value={current} onValueChange={(v) => handleCategoryChange(row.id, v)}>
-                                <SelectTrigger className="h-9">
-                                  <SelectValue placeholder="-- Pilih Akun --" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {expenseCategories.map((c) => (
-                                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+              ))}
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={handleSaveAll} disabled={saving || Object.keys(pendingChanges).length === 0}>
+                <Save className="w-4 h-4 mr-1" />
+                {saving ? 'Menyimpan...' : `Simpan Perubahan (${Object.keys(pendingChanges).length})`}
+              </Button>
+            </div>
+
+            {/* Section: Belum Diassign */}
+            <ReportSection
+              title="Belum Diassign"
+              accent="warning"
+              groups={unassignedGroups}
+              openGroups={openGroups}
+              toggleGroup={toggleGroup}
+              expenseCategories={expenseCategories}
+              pendingChanges={pendingChanges}
+              onCategoryChange={handleCategoryChange}
+              formatRp={formatRp}
+              defaultOpen
+            />
+
+            {/* Section: Akun Terisi */}
+            <ReportSection
+              title="Akun Terisi"
+              accent="success"
+              groups={assignedGroups}
+              openGroups={openGroups}
+              toggleGroup={toggleGroup}
+              expenseCategories={expenseCategories}
+              pendingChanges={pendingChanges}
+              onCategoryChange={handleCategoryChange}
+              formatRp={formatRp}
+            />
+
+            {filteredGroups.length === 0 && (
+              <Card className="glass-card">
+                <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                  Belum ada laporan harian pada periode & cabang ini.
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* TAB 2: LAPORAN L/R */}
