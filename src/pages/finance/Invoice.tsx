@@ -387,7 +387,35 @@ export default function InvoicePage() {
           {/* ============ KATALOG ============ */}
           <TabsContent value="katalog" className="space-y-4">
             <Card className="glass-card">
-              <CardHeader><CardTitle className="text-base">{editingCat ? 'Edit Item' : 'Tambah Item Baru'}</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
+                <CardTitle className="text-base">{editingCat ? 'Edit Item' : 'Tambah Item Baru'}</CardTitle>
+                <div className="flex gap-2 flex-wrap">
+                  <CsvImportButton
+                    entityLabel="Item Katalog"
+                    headers={['name', 'unit', 'default_price']}
+                    templateFilename="template-katalog-item"
+                    sampleRows={[
+                      ['Ayam Potong', 'kg', 35000],
+                      ['Beras Premium', 'kg', 14000],
+                      ['Minyak Goreng', 'liter', 18000],
+                    ]}
+                    parseRow={(r) => {
+                      const name = (r.name || '').trim();
+                      if (!name) throw new Error('Kolom name wajib diisi');
+                      const price = Number(r.default_price);
+                      if (isNaN(price) || price < 0) throw new Error('default_price harus angka >= 0');
+                      return { name, unit: (r.unit || 'pcs').trim(), default_price: price };
+                    }}
+                    onImport={async (rows) => {
+                      const { error } = await supabase.from('item_catalog').insert(rows);
+                      if (error) return { success: 0, failed: rows.length, message: error.message };
+                      return { success: rows.length, failed: 0 };
+                    }}
+                    onImported={fetchCatalog}
+                    helperText="Format kolom: name, unit, default_price. Item akan ditambahkan sebagai baru."
+                  />
+                </div>
+              </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
                 <div><Label>Nama</Label><Input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="cth: Ayam Potong" /></div>
                 <div><Label>Satuan</Label><Input value={catUnit} onChange={(e) => setCatUnit(e.target.value)} placeholder="kg" /></div>
