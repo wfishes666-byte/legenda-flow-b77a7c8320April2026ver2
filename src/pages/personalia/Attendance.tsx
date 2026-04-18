@@ -355,6 +355,10 @@ export default function AttendancePage() {
           <TabsContent value="recap">
             <RecapTab outletId={selectedOutlet} profiles={outletProfiles} />
           </TabsContent>
+
+          <TabsContent value="logs">
+            <SelfieLogsTab outletId={selectedOutlet} profiles={outletProfiles} />
+          </TabsContent>
         </Tabs>
       </div>
     </AppLayout>
