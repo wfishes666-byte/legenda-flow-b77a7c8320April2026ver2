@@ -495,11 +495,11 @@ export default function FinancialReport() {
 
             {/* Pengeluaran */}
             <Card className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2 text-destructive">
-                  <Trash2 className="w-4 h-4" /> Rincian Pengeluaran
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-base flex items-center gap-2 text-destructive min-w-0">
+                  <Trash2 className="w-4 h-4 shrink-0" /> <span className="break-words">Rincian Pengeluaran</span>
                 </CardTitle>
-                <Button type="button" size="sm" onClick={addExpenseRow}>
+                <Button type="button" size="sm" onClick={addExpenseRow} className="w-full sm:w-auto shrink-0">
                   <Plus className="w-4 h-4 mr-1" /> Tambah Baris
                 </Button>
               </CardHeader>
