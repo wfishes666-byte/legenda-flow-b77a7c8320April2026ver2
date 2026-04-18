@@ -906,6 +906,33 @@ export type Database = {
         }
         Relationships: []
       }
+      role_menu_permissions: {
+        Row: {
+          enabled: boolean
+          id: string
+          menu_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          menu_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          menu_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       sp_history: {
         Row: {
           created_at: string
