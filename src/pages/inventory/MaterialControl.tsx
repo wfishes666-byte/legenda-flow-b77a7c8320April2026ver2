@@ -306,7 +306,19 @@ export default function MaterialControlPage() {
               </Card>
             )}
             <Card className="glass-card">
-              <CardHeader><CardTitle className="text-lg">Riwayat Penjualan</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between gap-3">
+                <CardTitle className="text-lg">Riwayat Penjualan</CardTitle>
+                <ExportButtons
+                  filename="riwayat-penjualan-menu"
+                  title="Riwayat Penjualan Menu"
+                  columns={[
+                    { header: 'Tanggal', accessor: 'sale_date' },
+                    { header: 'Menu', accessor: 'menu_item_name' },
+                    { header: 'Terjual', accessor: 'qty_sold' },
+                  ]}
+                  rows={sales}
+                />
+              </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
