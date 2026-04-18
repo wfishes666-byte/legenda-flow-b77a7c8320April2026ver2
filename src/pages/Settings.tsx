@@ -40,7 +40,6 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
 
   // Hidden password feature (admin only)
-  const [dragonClicks, setDragonClicks] = useState(0);
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -77,14 +76,7 @@ export default function SettingsPage() {
 
   const handleDragonClick = () => {
     if (role !== 'admin') return;
-    const next = dragonClicks + 1;
-    setDragonClicks(next);
-    if (next >= 3) {
-      setDragonClicks(0);
-      setPwDialogOpen(true);
-    }
-    // Reset counter setelah 1.5s tanpa klik
-    setTimeout(() => setDragonClicks(0), 1500);
+    setPwDialogOpen(true);
   };
 
   const handleChangePassword = async () => {
@@ -262,17 +254,24 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-between items-center gap-3">
-          {/* Hidden dragon trigger — admin only. Klik 3x untuk ganti password */}
+        <div className="flex justify-between items-center gap-3 flex-wrap">
+          {/* Hidden dragon trigger — admin only. Klik untuk membuka dialog ganti password */}
           {role === 'admin' ? (
             <button
               type="button"
               onClick={handleDragonClick}
-              aria-label="Naga"
-              title=""
-              className="opacity-40 hover:opacity-100 transition-opacity rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Ganti password admin (rahasia)"
+              title="🐉 Klik naga — fitur tersembunyi admin"
+              className="group relative flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border/40 hover:border-primary hover:bg-primary/5 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <img src={nagaBg} alt="" className="h-12 w-12 object-contain pointer-events-none select-none" />
+              <img
+                src={nagaBg}
+                alt=""
+                className="h-10 w-10 object-contain opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none select-none"
+              />
+              <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors hidden sm:inline">
+                🔒 Rahasia Admin
+              </span>
             </button>
           ) : (
             <span />
