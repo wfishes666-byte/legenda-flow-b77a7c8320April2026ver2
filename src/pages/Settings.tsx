@@ -41,7 +41,6 @@ export default function SettingsPage() {
 
   // Hidden password feature (admin only)
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
-  const [pwDialogOpen, setPwDialogOpen] = useState(false);
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
