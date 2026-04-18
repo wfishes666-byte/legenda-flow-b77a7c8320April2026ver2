@@ -402,9 +402,9 @@ export default function InvoicePage() {
           {/* ============ KATALOG ============ */}
           <TabsContent value="katalog" className="space-y-4">
             <Card className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
-                <CardTitle className="text-base">{editingCat ? 'Edit Item' : 'Tambah Item Baru'}</CardTitle>
-                <div className="flex gap-2 flex-wrap">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-base min-w-0 break-words">{editingCat ? 'Edit Item' : 'Tambah Item Baru'}</CardTitle>
+                <div className="flex gap-2 flex-wrap w-full sm:w-auto">
                   <CsvImportButton
                     entityLabel="Item Katalog"
                     headers={['name', 'unit', 'default_price']}
@@ -443,8 +443,8 @@ export default function InvoicePage() {
             </Card>
 
             <Card className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between gap-3">
-                <CardTitle className="text-base">Daftar Katalog ({catalog.length})</CardTitle>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-base min-w-0 break-words">Daftar Katalog ({catalog.length})</CardTitle>
                 <ExportButtons
                   filename="katalog-item"
                   title="Katalog Item"
@@ -511,8 +511,8 @@ export default function InvoicePage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card className="glass-card">
-                <CardHeader className="flex flex-row items-center justify-between gap-3">
-                  <CardTitle className="text-base">Per Outlet</CardTitle>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-base min-w-0 break-words">Per Outlet</CardTitle>
                   <ExportButtons
                     filename={`ringkasan-invoice-per-outlet-${filterMonth}`}
                     title={`Ringkasan Invoice per Outlet - ${filterMonth}`}
@@ -547,8 +547,8 @@ export default function InvoicePage() {
               </Card>
 
               <Card className="glass-card">
-                <CardHeader className="flex flex-row items-center justify-between gap-3">
-                  <CardTitle className="text-base">Per Item</CardTitle>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-base min-w-0 break-words">Per Item</CardTitle>
                   <ExportButtons
                     filename={`ringkasan-invoice-per-item-${filterMonth}`}
                     title={`Ringkasan Invoice per Item - ${filterMonth}`}

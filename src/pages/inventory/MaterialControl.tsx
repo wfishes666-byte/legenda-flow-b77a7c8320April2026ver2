@@ -250,8 +250,8 @@ export default function MaterialControlPage() {
               </Card>
             )}
             <Card className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between gap-3">
-                <CardTitle className="text-lg">Daftar Resep ({recipes.length})</CardTitle>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-lg min-w-0 break-words">Daftar Resep ({recipes.length})</CardTitle>
                 <ExportButtons
                   filename="daftar-resep"
                   title="Daftar Resep"
@@ -357,8 +357,8 @@ export default function MaterialControlPage() {
               </Card>
             )}
             <Card className="glass-card">
-              <CardHeader className="flex flex-row items-center justify-between gap-3">
-                <CardTitle className="text-lg">Riwayat Penjualan</CardTitle>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle className="text-lg min-w-0 break-words">Riwayat Penjualan</CardTitle>
                 <ExportButtons
                   filename="riwayat-penjualan-menu"
                   title="Riwayat Penjualan Menu"
