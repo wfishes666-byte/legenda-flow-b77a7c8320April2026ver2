@@ -274,11 +274,12 @@ export default function ProfilePage() {
 
         {/* Absensi Hari Ini */}
         <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-heading text-lg flex items-center gap-2">
-              <Camera className="w-5 h-5 text-primary" /> Absensi Hari Ini
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="font-heading text-base sm:text-lg flex items-center gap-2 min-w-0">
+              <Camera className="w-5 h-5 text-primary shrink-0" />
+              <span className="truncate">Absensi Hari Ini</span>
             </CardTitle>
-            <Button onClick={() => navigate('/attendance/check-in')} className="gap-2">
+            <Button onClick={() => navigate('/attendance/check-in')} size="sm" className="gap-2 w-full sm:w-auto shrink-0">
               <Camera className="w-4 h-4" /> Absen Sekarang
             </Button>
           </CardHeader>
