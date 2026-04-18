@@ -973,6 +973,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       pic_can_access_outlet: { Args: { _outlet_id: string }; Returns: boolean }
     }
     Enums: {
