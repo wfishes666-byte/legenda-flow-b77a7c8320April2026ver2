@@ -51,7 +51,7 @@ interface RowState {
 
 export default function AttendancePage() {
   const { role } = useAuth();
-  const isManagement = role === 'management';
+  const canManageOutlets = role === 'management' || role === 'admin';
   const { toast } = useToast();
   const { outlets, selectedOutlet, setSelectedOutlet, loading: outletsLoading } = useOutlets();
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -185,7 +185,7 @@ export default function AttendancePage() {
             <TabsTrigger value="input">Input Absensi</TabsTrigger>
             <TabsTrigger value="recap">Rekap Bulanan</TabsTrigger>
             <TabsTrigger value="logs">Log Absen Selfie</TabsTrigger>
-            {isManagement && <TabsTrigger value="outlets">Kelola Outlet</TabsTrigger>}
+            {canManageOutlets && <TabsTrigger value="outlets">Kelola Toko</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="input" className="space-y-4">
@@ -364,7 +364,7 @@ export default function AttendancePage() {
             <SelfieLogsTab outlets={outlets} allProfiles={profiles} />
           </TabsContent>
 
-          {isManagement && (
+          {canManageOutlets && (
             <TabsContent value="outlets">
               <OutletsManagementTab />
             </TabsContent>
