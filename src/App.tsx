@@ -46,6 +46,8 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
   const { user, role, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center min-h-screen text-muted-foreground">Memuat...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  // Admin selalu boleh akses semua route
+  if (role === 'admin') return <>{children}</>;
   if (allowedRoles && role && !allowedRoles.includes(role)) return <Navigate to="/profile" replace />;
   return <>{children}</>;
 }
