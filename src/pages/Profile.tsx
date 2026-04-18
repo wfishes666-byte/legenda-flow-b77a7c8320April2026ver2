@@ -84,7 +84,7 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, phone, address, date_of_birth, job_title, discipline_points, warning_letter_status, employment_status, contract_end_date')
+        .select('full_name, nickname, phone, address, date_of_birth, job_title, discipline_points, warning_letter_status, employment_status, contract_end_date, nik, join_date, outlet_id, outlets(name)')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -94,31 +94,44 @@ export default function ProfilePage() {
       }
 
       if (data) {
-        setProfile(data as Profile);
+        const { outlets, ...rest } = data as any;
+        setProfile({ ...rest, outlet_name: outlets?.name });
       } else {
-        // Auto-create profil kosong jika belum ada (mis. user lama sebelum trigger)
-        const fullName = (user.user_metadata as any)?.full_name || user.email?.split('@')[0] || '';
+        const meta = (user.user_metadata as any) || {};
+        const fullName = meta.full_name || user.email?.split('@')[0] || '';
         const { data: inserted, error: insErr } = await supabase
           .from('profiles')
-          .insert({ user_id: user.id, full_name: fullName })
-          .select('full_name, phone, address, date_of_birth, job_title, discipline_points, warning_letter_status, employment_status, contract_end_date')
+          .insert({
+            user_id: user.id,
+            full_name: fullName,
+            nickname: meta.nickname || '',
+            phone: meta.phone || '',
+            address: meta.address || '',
+            nik: meta.nik || '',
+            outlet_id: meta.outlet_id || null,
+          })
+          .select('full_name, nickname, phone, address, date_of_birth, job_title, discipline_points, warning_letter_status, employment_status, contract_end_date, nik, join_date, outlet_id, outlets(name)')
           .maybeSingle();
         if (insErr) {
           console.error('Profile create error:', insErr);
-          // Tetap tampilkan UI dengan data default agar tidak stuck "Memuat..."
           setProfile({
             full_name: fullName,
-            phone: '',
-            address: '',
+            nickname: meta.nickname || '',
+            phone: meta.phone || '',
+            address: meta.address || '',
             date_of_birth: null,
             job_title: '',
             discipline_points: 0,
             warning_letter_status: 'Non-SP',
             employment_status: 'Contract',
             contract_end_date: null,
+            nik: meta.nik || '',
+            join_date: null,
+            outlet_id: meta.outlet_id || null,
           });
         } else if (inserted) {
-          setProfile(inserted as Profile);
+          const { outlets, ...rest } = inserted as any;
+          setProfile({ ...rest, outlet_name: outlets?.name });
         }
       }
     };
