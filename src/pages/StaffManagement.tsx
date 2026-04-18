@@ -18,6 +18,7 @@ interface StaffProfile {
   id: string;
   user_id: string;
   full_name: string;
+  nickname: string;
   phone: string;
   address: string;
   date_of_birth: string | null;
@@ -30,6 +31,8 @@ interface StaffProfile {
   base_salary: number;
   transport_allowance: number;
   meal_allowance: number;
+  nik: string;
+  join_date: string | null;
 }
 
 const formatRupiah = (n: number) => `Rp ${Math.round(n || 0).toLocaleString('id-ID')}`;
@@ -56,14 +59,18 @@ export default function StaffManagement() {
     const { error } = await supabase
       .from('profiles')
       .update({
+        nickname: editProfile.nickname,
         phone: editProfile.phone,
         address: editProfile.address,
+        date_of_birth: editProfile.date_of_birth,
         job_title: editProfile.job_title,
         discipline_points: editProfile.discipline_points,
         warning_letter_status: editProfile.warning_letter_status,
         employment_status: editProfile.employment_status,
         contract_end_date: editProfile.contract_end_date,
         outlet_id: editProfile.outlet_id,
+        nik: editProfile.nik,
+        join_date: editProfile.join_date,
         base_salary: Math.round(editProfile.base_salary || 0),
         transport_allowance: Math.round(editProfile.transport_allowance || 0),
         meal_allowance: Math.round(editProfile.meal_allowance || 0),
@@ -108,6 +115,8 @@ export default function StaffManagement() {
                   <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="p-4 font-medium">Nama</th>
                     <th className="p-4 font-medium">Jabatan</th>
+                    <th className="p-4 font-medium">Cabang</th>
+                    <th className="p-4 font-medium">Telepon</th>
                     <th className="p-4 font-medium">Poin Disiplin</th>
                     <th className="p-4 font-medium">Status SP</th>
                     <th className="p-4 font-medium">Status</th>
@@ -115,10 +124,17 @@ export default function StaffManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {profiles.map((p) => (
+                  {profiles.map((p) => {
+                    const outletName = outlets.find((o) => o.id === p.outlet_id)?.name || '-';
+                    return (
                     <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="p-4 font-medium">{p.full_name || '-'}</td>
+                      <td className="p-4 font-medium">
+                        <div>{p.full_name || '-'}</div>
+                        {p.nickname && <div className="text-xs text-muted-foreground">({p.nickname})</div>}
+                      </td>
                       <td className="p-4">{p.job_title || '-'}</td>
+                      <td className="p-4">{outletName}</td>
+                      <td className="p-4 text-muted-foreground">{p.phone || '-'}</td>
                       <td className="p-4">
                         <Badge variant={p.discipline_points > 3 ? 'destructive' : 'secondary'}>
                           {p.discipline_points}
@@ -157,10 +173,11 @@ export default function StaffManagement() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                   {profiles.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">Belum ada karyawan.</td>
+                      <td colSpan={8} className="p-8 text-center text-muted-foreground">Belum ada karyawan.</td>
                     </tr>
                   )}
                 </tbody>
@@ -178,6 +195,16 @@ export default function StaffManagement() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label>Nama Panggilan</Label>
+                    <Input value={editProfile.nickname || ''} onChange={(e) => setEditProfile({ ...editProfile, nickname: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>NIK</Label>
+                    <Input value={editProfile.nik || ''} maxLength={16} onChange={(e) => setEditProfile({ ...editProfile, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label>Telepon</Label>
                     <Input value={editProfile.phone || ''} onChange={(e) => setEditProfile({ ...editProfile, phone: e.target.value })} />
                   </div>
@@ -189,6 +216,16 @@ export default function StaffManagement() {
                 <div className="space-y-2">
                   <Label>Alamat</Label>
                   <Input value={editProfile.address || ''} onChange={(e) => setEditProfile({ ...editProfile, address: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Tanggal Lahir</Label>
+                    <Input type="date" value={editProfile.date_of_birth || ''} onChange={(e) => setEditProfile({ ...editProfile, date_of_birth: e.target.value || null })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tanggal Bergabung</Label>
+                    <Input type="date" value={editProfile.join_date || ''} onChange={(e) => setEditProfile({ ...editProfile, join_date: e.target.value || null })} />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

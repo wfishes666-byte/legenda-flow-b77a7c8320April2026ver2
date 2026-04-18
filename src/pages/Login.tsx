@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,9 +30,20 @@ export default function Login() {
   const [nik, setNik] = useState('');
   const [joinMonth, setJoinMonth] = useState('');
   const [joinYear, setJoinYear] = useState('');
+  const [outletId, setOutletId] = useState('');
+  const [outlets, setOutlets] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
+
+  // Load outlets for signup outlet selector
+  useEffect(() => {
+    if (!isSignUp) return;
+    if (outlets.length > 0) return;
+    supabase.from('outlets').select('id, name').order('name').then(({ data }) => {
+      if (data) setOutlets(data);
+    });
+  }, [isSignUp, outlets.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +60,16 @@ export default function Login() {
         setLoading(false);
         return;
       }
-      const { error } = await signUp(email, password, fullName);
+      const { error } = await signUp(email, password, {
+        full_name: fullName,
+        nickname,
+        address,
+        phone,
+        nik,
+        outlet_id: outletId || null,
+        join_month: joinMonth,
+        join_year: joinYear,
+      });
       if (error) {
         toast({ title: 'Gagal mendaftar', description: error.message, variant: 'destructive' });
       } else {
@@ -145,6 +166,17 @@ export default function Login() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cabang / Outlet Tempat Bekerja</Label>
+                  <Select value={outletId} onValueChange={setOutletId}>
+                    <SelectTrigger><SelectValue placeholder={outlets.length === 0 ? 'Memuat cabang...' : 'Pilih cabang'} /></SelectTrigger>
+                    <SelectContent>
+                      {outlets.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             }
