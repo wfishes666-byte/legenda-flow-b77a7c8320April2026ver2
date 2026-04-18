@@ -40,6 +40,10 @@ export default function ProfitLossPage() {
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [balancingRows, setBalancingRows] = useState<{ id: string; label: string; amount: number }[]>([
+    { id: '1', label: 'Kas Tunai Aktual', amount: 0 },
+    { id: '2', label: 'Transfer Aktual', amount: 0 },
+  ]);
 
   const fetchCategories = async () => {
     const { data } = await supabase.from('profit_loss_categories').select('*').order('type').order('name');
