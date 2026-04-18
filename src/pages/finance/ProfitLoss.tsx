@@ -49,11 +49,13 @@ export default function ProfitLossPage() {
   const { outlets, selectedOutlet, setSelectedOutlet } = useOutlets();
   const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [incomeData, setIncomeData] = useState({ offline: 0, online: 0 });
-  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
+  const [reportGroups, setReportGroups] = useState<ReportGroup[]>([]);
   const [categories, setCategories] = useState<PLCategory[]>([]);
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [inputOutletFilter, setInputOutletFilter] = useState<string>('all');
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [balancingRows, setBalancingRows] = useState<{ id: string; label: string; amount: number }[]>([
     { id: '1', label: 'Kas Tunai Aktual', amount: 0 },
     { id: '2', label: 'Transfer Aktual', amount: 0 },
@@ -68,46 +70,69 @@ export default function ProfitLossPage() {
     const startDate = `${month}-01`;
     const endDate = format(endOfMonth(new Date(startDate)), 'yyyy-MM-dd');
 
-    let query = supabase
+    // For Laporan L/R: only selected outlet
+    let lrQuery = supabase
       .from('financial_reports')
-      .select('id, daily_offline_income, online_delivery_sales, report_date')
+      .select('id, daily_offline_income, online_delivery_sales')
       .gte('report_date', startDate)
       .lte('report_date', endDate);
-    if (selectedOutlet) query = query.eq('outlet_id', selectedOutlet);
-    const { data: reports } = await query;
+    if (selectedOutlet) lrQuery = lrQuery.eq('outlet_id', selectedOutlet);
+    const { data: lrReports } = await lrQuery;
 
     let offline = 0, online = 0;
-    const reportMap: Record<string, string> = {};
-    reports?.forEach((r) => {
+    lrReports?.forEach((r) => {
       offline += r.daily_offline_income || 0;
       online += r.online_delivery_sales || 0;
-      reportMap[r.id] = r.report_date;
     });
     setIncomeData({ offline, online });
 
-    const reportIds = Object.keys(reportMap);
+    // For Input Akun: ALL outlets in the month
+    const { data: allReports } = await supabase
+      .from('financial_reports')
+      .select('id, daily_offline_income, online_delivery_sales, report_date, outlet_id, created_at')
+      .gte('report_date', startDate)
+      .lte('report_date', endDate)
+      .order('report_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    const outletMap = Object.fromEntries(outlets.map((o) => [o.id, o.name]));
+    const groups: ReportGroup[] = (allReports || []).map((r: any) => ({
+      report_id: r.id,
+      report_date: r.report_date,
+      outlet_id: r.outlet_id,
+      outlet_name: r.outlet_id ? (outletMap[r.outlet_id] || 'Tanpa Outlet') : 'Tanpa Outlet',
+      created_at: r.created_at,
+      income: (r.daily_offline_income || 0) + (r.online_delivery_sales || 0),
+      expenses: [],
+    }));
+
+    const reportIds = groups.map((g) => g.report_id);
     if (reportIds.length > 0) {
       const { data: expenses } = await supabase
         .from('expense_items')
-        .select('id, description, amount, category, report_id')
+        .select('id, description, amount, qty, unit_price, category, report_id')
         .in('report_id', reportIds);
-      const rows: ExpenseRow[] = (expenses || []).map((e: any) => ({
-        id: e.id,
-        description: e.description,
-        amount: e.amount || 0,
-        category: e.category,
-        report_date: reportMap[e.report_id] || '',
-      }));
-      rows.sort((a, b) => a.report_date.localeCompare(b.report_date));
-      setExpenseRows(rows);
-    } else {
-      setExpenseRows([]);
+      const expByReport: Record<string, ExpenseRow[]> = {};
+      (expenses || []).forEach((e: any) => {
+        const row: ExpenseRow = {
+          id: e.id,
+          description: e.description,
+          amount: e.amount || 0,
+          qty: e.qty || 1,
+          unit_price: e.unit_price || 0,
+          category: e.category,
+          report_id: e.report_id,
+        };
+        (expByReport[e.report_id] ||= []).push(row);
+      });
+      groups.forEach((g) => { g.expenses = expByReport[g.report_id] || []; });
     }
+    setReportGroups(groups);
     setPendingChanges({});
   };
 
   useEffect(() => { fetchCategories(); }, []);
-  useEffect(() => { fetchData(); }, [month, selectedOutlet]);
+  useEffect(() => { fetchData(); }, [month, selectedOutlet, outlets]);
 
   const handleCategoryChange = (id: string, category: string) => {
     setPendingChanges((prev) => ({ ...prev, [id]: category }));
