@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { ClipboardList, Save, Search, Store } from 'lucide-react';
+import { ClipboardList, Save, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 
@@ -50,7 +50,7 @@ export default function PerformanceReviewPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [reviewerName, setReviewerName] = useState('');
 
-  const [search, setSearch] = useState('');
+  
   const [employeeId, setEmployeeId] = useState('');
   const [month, setMonth] = useState<string>('');
   const [year, setYear] = useState<string>(String(new Date().getFullYear()));
@@ -90,11 +90,10 @@ export default function PerformanceReviewPage() {
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
       if (outletId !== ALL && p.outlet_id !== outletId) return false;
-      if (search.trim() && !p.full_name.toLowerCase().includes(search.toLowerCase())) return false;
       if (reviewedForPeriod.has(p.user_id)) return false;
       return true;
     });
-  }, [profiles, outletId, search, reviewedForPeriod]);
+  }, [profiles, outletId, reviewedForPeriod]);
 
   // Reset employee if no longer in filtered list
   useEffect(() => {
@@ -251,15 +250,6 @@ export default function PerformanceReviewPage() {
                   <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Karyawan
                   </Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Cari nama karyawan..."
-                      className="pl-9"
-                    />
-                  </div>
                   <Select value={employeeId} onValueChange={setEmployeeId}>
                     <SelectTrigger><SelectValue placeholder={month && year ? '-- Pilih --' : 'Pilih bulan & tahun dahulu'} /></SelectTrigger>
                     <SelectContent>
