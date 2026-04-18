@@ -167,6 +167,17 @@ export default function Login() {
                     </Select>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label>Cabang / Outlet Tempat Bekerja</Label>
+                  <Select value={outletId} onValueChange={setOutletId}>
+                    <SelectTrigger><SelectValue placeholder={outlets.length === 0 ? 'Memuat cabang...' : 'Pilih cabang'} /></SelectTrigger>
+                    <SelectContent>
+                      {outlets.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             }
             <div className="space-y-2">
