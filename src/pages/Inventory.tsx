@@ -15,6 +15,7 @@ import { Plus, Trash2, Save, ShoppingCart, Download, FileText } from 'lucide-rea
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { CsvImportButton } from '@/components/CsvImportButton';
 
 interface StockRow {
   item_name: string;
