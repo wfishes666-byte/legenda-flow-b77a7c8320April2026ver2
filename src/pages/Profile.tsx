@@ -203,10 +203,14 @@ export default function ProfilePage() {
   }
 
   const infoItems = [
+    { icon: UserCircle, label: 'Nama Panggilan', value: profile.nickname || '-' },
     { icon: Phone, label: 'Telepon', value: profile.phone || '-' },
     { icon: MapPin, label: 'Alamat', value: profile.address || '-' },
     { icon: CalendarDays, label: 'Tanggal Lahir', value: profile.date_of_birth ? format(new Date(profile.date_of_birth), 'dd MMM yyyy') : '-' },
     { icon: Briefcase, label: 'Jabatan', value: profile.job_title || '-' },
+    { icon: Store, label: 'Cabang', value: profile.outlet_name || '-' },
+    { icon: IdCard, label: 'NIK', value: profile.nik || '-' },
+    { icon: CalendarDays, label: 'Tanggal Bergabung', value: profile.join_date ? format(new Date(profile.join_date), 'MMMM yyyy', { locale: idLocale }) : '-' },
   ];
 
   return (
