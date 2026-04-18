@@ -72,18 +72,19 @@ export default function MenuPermissionsTab({
 
     // Try update, if no row affected, insert
     const matchCol = isCustom ? 'role_code' : 'role';
-    const { data: existing } = await supabase
+    const sb = supabase as any;
+    const { data: existing } = await sb
       .from('role_menu_permissions')
       .select('id')
-      .eq(matchCol as any, roleKey)
+      .eq(matchCol, roleKey)
       .eq('menu_key', menuKey)
       .maybeSingle();
 
     let error;
     if (existing) {
-      ({ error } = await supabase.from('role_menu_permissions').update(payload).eq('id', (existing as any).id));
+      ({ error } = await sb.from('role_menu_permissions').update(payload).eq('id', existing.id));
     } else {
-      ({ error } = await supabase.from('role_menu_permissions').insert(payload));
+      ({ error } = await sb.from('role_menu_permissions').insert(payload));
     }
     if (error) toast({ title: 'Gagal menyimpan', description: error.message, variant: 'destructive' });
     await refetch();
