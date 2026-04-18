@@ -10,8 +10,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, TrendingDown, Download, Save } from 'lucide-react';
+import { TrendingUp, TrendingDown, Download, Save, Plus, X } from 'lucide-react';
 import { format, endOfMonth } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
