@@ -283,7 +283,38 @@ export default function MaterialControlPage() {
           <TabsContent value="sales">
             {canEdit && (
               <Card className="glass-card mb-4">
-                <CardHeader><CardTitle className="text-lg">Input Penjualan Harian</CardTitle></CardHeader>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-lg">Input Penjualan Harian</CardTitle>
+                  <div className="flex gap-2 flex-wrap">
+                    <CsvImportButton
+                      entityLabel="Penjualan"
+                      headers={['sale_date', 'menu_item_name', 'qty_sold']}
+                      templateFilename="template-penjualan-harian"
+                      sampleRows={[
+                        [new Date().toISOString().split('T')[0], 'Es Kopi Susu', 25],
+                        [new Date().toISOString().split('T')[0], 'Nasi Goreng', 12],
+                      ]}
+                      parseRow={(r) => {
+                        const date = (r.sale_date || '').trim();
+                        const menu = (r.menu_item_name || '').trim();
+                        const qty = Number(r.qty_sold);
+                        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('sale_date harus YYYY-MM-DD');
+                        if (!menu) throw new Error('menu_item_name wajib diisi');
+                        if (isNaN(qty) || qty <= 0) throw new Error('qty_sold harus angka > 0');
+                        return { sale_date: date, menu_item_name: menu, qty_sold: qty };
+                      }}
+                      onImport={async (rows) => {
+                        if (!user) return { success: 0, failed: rows.length, message: 'User tidak terautentikasi' };
+                        const payload = rows.map((r) => ({ ...r, recorded_by: user.id, outlet_id: selectedOutlet }));
+                        const { error } = await supabase.from('daily_sales').insert(payload);
+                        if (error) return { success: 0, failed: rows.length, message: error.message };
+                        return { success: rows.length, failed: 0 };
+                      }}
+                      onImported={fetchData}
+                      helperText="Format: sale_date (YYYY-MM-DD), menu_item_name, qty_sold"
+                    />
+                  </div>
+                </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSaleSubmit} className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 space-y-2">
