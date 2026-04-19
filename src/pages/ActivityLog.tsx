@@ -324,8 +324,13 @@ export default function ActivityLogPage() {
                             <tbody>
                               {items.map((l) => {
                                 const reset = isPwdReset(l);
+                                const reqId = l.metadata?.request_id;
+                                const resetStatus = reset ? (reqId ? resetStatusMap[reqId] : l.metadata?.status) : null;
+                                const handled = reset && (resetStatus === 'completed' || resetStatus === 'unsolved');
                                 const rowClass = reset
-                                  ? 'bg-destructive/10 hover:bg-destructive/15 cursor-pointer'
+                                  ? handled
+                                    ? 'bg-green-500/10 hover:bg-green-500/15 cursor-pointer'
+                                    : 'bg-destructive/10 hover:bg-destructive/15 cursor-pointer'
                                   : 'hover:bg-muted/30';
                                 return (
                                   <tr
@@ -340,26 +345,46 @@ export default function ActivityLogPage() {
                                     <td className="p-3"><Badge variant={roleColor(l.user_role) as any}>{l.user_role}</Badge></td>
                                     <td className="p-3">
                                       {reset ? (
-                                        <Badge variant="destructive" className="gap-1">
-                                          <AlertCircle className="w-3 h-3" /> {l.module}
-                                        </Badge>
+                                        handled ? (
+                                          <Badge className="gap-1 bg-green-600 hover:bg-green-600/90 text-white border-transparent">
+                                            <CheckCircle2 className="w-3 h-3" /> {l.module}
+                                          </Badge>
+                                        ) : (
+                                          <Badge variant="destructive" className="gap-1">
+                                            <AlertCircle className="w-3 h-3" /> {l.module}
+                                          </Badge>
+                                        )
                                       ) : (
                                         <Badge variant="outline">{l.module}</Badge>
                                       )}
                                     </td>
                                     <td className="p-3">
-                                      {reset ? <span className="text-destructive font-semibold">{l.action}</span> : l.action}
+                                      {reset ? (
+                                        <span className={handled ? 'text-green-700 dark:text-green-400 font-semibold' : 'text-destructive font-semibold'}>
+                                          {l.action}
+                                        </span>
+                                      ) : l.action}
                                     </td>
                                     <td className="p-3 text-muted-foreground max-w-md">{l.description}</td>
                                     <td className="p-3 text-right">
                                       {reset && canManage ? (
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          onClick={(e) => { e.stopPropagation(); openResetDialog(l); }}
-                                        >
-                                          <KeyRound className="w-3.5 h-3.5 mr-1" /> Tangani
-                                        </Button>
+                                        handled ? (
+                                          <Button
+                                            size="sm"
+                                            onClick={(e) => { e.stopPropagation(); openResetDialog(l); }}
+                                            className="bg-green-600 hover:bg-green-600/90 text-white"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Tertangani
+                                          </Button>
+                                        ) : (
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={(e) => { e.stopPropagation(); openResetDialog(l); }}
+                                          >
+                                            <KeyRound className="w-3.5 h-3.5 mr-1" /> Tangani
+                                          </Button>
+                                        )
                                       ) : null}
                                     </td>
                                   </tr>
