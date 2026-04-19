@@ -111,9 +111,9 @@ export default function ActivityLogPage() {
   const generateLink = async () => {
     if (!activeRequestId || !activeEmail) return;
     setGenerating(true);
-    const redirect_to = `${window.location.origin}/reset-password`;
+    const app_url = window.location.origin;
     const { data, error } = await supabase.functions.invoke('generate-reset-link', {
-      body: { request_id: activeRequestId, email: activeEmail, redirect_to },
+      body: { request_id: activeRequestId, email: activeEmail, app_url },
     });
     setGenerating(false);
     if (error || (data as any)?.error) {
