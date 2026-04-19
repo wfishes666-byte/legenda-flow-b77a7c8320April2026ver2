@@ -33,6 +33,7 @@ export default function ActivityLogPage() {
   const canManage = role === 'admin' || role === 'management';
 
   const [logs, setLogs] = useState<LogRow[]>([]);
+  const [resetStatusMap, setResetStatusMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [moduleFilter, setModuleFilter] = useState<string>('all');
@@ -55,7 +56,28 @@ export default function ActivityLogPage() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
-    setLogs((data as LogRow[]) || []);
+    const rows = (data as LogRow[]) || [];
+    setLogs(rows);
+
+    // Ambil status terbaru untuk semua reset password requests yang muncul di log
+    const reqIds = Array.from(
+      new Set(
+        rows
+          .filter((l) => l.metadata?.kind === 'password_reset_request' && l.metadata?.request_id)
+          .map((l) => l.metadata.request_id as string)
+      )
+    );
+    if (reqIds.length > 0) {
+      const { data: reqs } = await supabase
+        .from('password_reset_requests')
+        .select('id, status')
+        .in('id', reqIds);
+      const map: Record<string, string> = {};
+      (reqs || []).forEach((r: any) => { map[r.id] = r.status; });
+      setResetStatusMap(map);
+    } else {
+      setResetStatusMap({});
+    }
     setLoading(false);
   };
 
@@ -249,9 +271,12 @@ export default function ActivityLogPage() {
                 {grouped.map(([dateKey, items], idx) => {
                   const open = isDateOpen(dateKey, idx);
                   const dateObj = new Date(dateKey);
-                  const pendingResetCount = items.filter(
-                    (l) => isPwdReset(l) && l.metadata?.status !== 'completed' && l.metadata?.status !== 'unsolved'
-                  ).length;
+                  const pendingResetCount = items.filter((l) => {
+                    if (!isPwdReset(l)) return false;
+                    const reqId = l.metadata?.request_id;
+                    const status = reqId ? resetStatusMap[reqId] : l.metadata?.status;
+                    return status !== 'completed' && status !== 'unsolved';
+                  }).length;
                   return (
                     <Collapsible key={dateKey} open={open} onOpenChange={() => toggleDate(dateKey)}>
                       <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors text-left">
@@ -299,8 +324,13 @@ export default function ActivityLogPage() {
                             <tbody>
                               {items.map((l) => {
                                 const reset = isPwdReset(l);
+                                const reqId = l.metadata?.request_id;
+                                const resetStatus = reset ? (reqId ? resetStatusMap[reqId] : l.metadata?.status) : null;
+                                const handled = reset && (resetStatus === 'completed' || resetStatus === 'unsolved');
                                 const rowClass = reset
-                                  ? 'bg-destructive/10 hover:bg-destructive/15 cursor-pointer'
+                                  ? handled
+                                    ? 'bg-green-500/10 hover:bg-green-500/15 cursor-pointer'
+                                    : 'bg-destructive/10 hover:bg-destructive/15 cursor-pointer'
                                   : 'hover:bg-muted/30';
                                 return (
                                   <tr
@@ -315,26 +345,46 @@ export default function ActivityLogPage() {
                                     <td className="p-3"><Badge variant={roleColor(l.user_role) as any}>{l.user_role}</Badge></td>
                                     <td className="p-3">
                                       {reset ? (
-                                        <Badge variant="destructive" className="gap-1">
-                                          <AlertCircle className="w-3 h-3" /> {l.module}
-                                        </Badge>
+                                        handled ? (
+                                          <Badge className="gap-1 bg-green-600 hover:bg-green-600/90 text-white border-transparent">
+                                            <CheckCircle2 className="w-3 h-3" /> {l.module}
+                                          </Badge>
+                                        ) : (
+                                          <Badge variant="destructive" className="gap-1">
+                                            <AlertCircle className="w-3 h-3" /> {l.module}
+                                          </Badge>
+                                        )
                                       ) : (
                                         <Badge variant="outline">{l.module}</Badge>
                                       )}
                                     </td>
                                     <td className="p-3">
-                                      {reset ? <span className="text-destructive font-semibold">{l.action}</span> : l.action}
+                                      {reset ? (
+                                        <span className={handled ? 'text-green-700 dark:text-green-400 font-semibold' : 'text-destructive font-semibold'}>
+                                          {l.action}
+                                        </span>
+                                      ) : l.action}
                                     </td>
                                     <td className="p-3 text-muted-foreground max-w-md">{l.description}</td>
                                     <td className="p-3 text-right">
                                       {reset && canManage ? (
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          onClick={(e) => { e.stopPropagation(); openResetDialog(l); }}
-                                        >
-                                          <KeyRound className="w-3.5 h-3.5 mr-1" /> Tangani
-                                        </Button>
+                                        handled ? (
+                                          <Button
+                                            size="sm"
+                                            onClick={(e) => { e.stopPropagation(); openResetDialog(l); }}
+                                            className="bg-green-600 hover:bg-green-600/90 text-white"
+                                          >
+                                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Tertangani
+                                          </Button>
+                                        ) : (
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={(e) => { e.stopPropagation(); openResetDialog(l); }}
+                                          >
+                                            <KeyRound className="w-3.5 h-3.5 mr-1" /> Tangani
+                                          </Button>
+                                        )
                                       ) : null}
                                     </td>
                                   </tr>
