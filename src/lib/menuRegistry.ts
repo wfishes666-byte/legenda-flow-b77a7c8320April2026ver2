@@ -107,6 +107,14 @@ export const MENU_GROUPS: MenuGroupDef[] = [
     ],
   },
   {
+    key: 'activity',
+    label: 'Log Kegiatan',
+    icon: Activity,
+    items: [
+      { key: 'personalia.activity', to: '/activity-log', icon: Activity, label: 'Log Kegiatan', defaultRoles: ['admin', 'management'] },
+    ],
+  },
+  {
     key: 'settings',
     label: 'Pengaturan',
     icon: SettingsIcon,
