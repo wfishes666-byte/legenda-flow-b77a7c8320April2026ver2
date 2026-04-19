@@ -1,7 +1,7 @@
 project_id = "fjdtiojwgqlnwfrlspui"
 
 [functions.generate-reset-link]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-admin]
 verify_jwt = false
