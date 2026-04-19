@@ -688,7 +688,9 @@ export type Database = {
           message: string
           reset_link: string | null
           status: string
+          token_hash: string | null
           updated_at: string
+          used_at: string | null
         }
         Insert: {
           created_at?: string
@@ -701,7 +703,9 @@ export type Database = {
           message?: string
           reset_link?: string | null
           status?: string
+          token_hash?: string | null
           updated_at?: string
+          used_at?: string | null
         }
         Update: {
           created_at?: string
@@ -714,7 +718,9 @@ export type Database = {
           message?: string
           reset_link?: string | null
           status?: string
+          token_hash?: string | null
           updated_at?: string
+          used_at?: string | null
         }
         Relationships: []
       }
