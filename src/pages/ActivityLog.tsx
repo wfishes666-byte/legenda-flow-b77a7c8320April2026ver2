@@ -56,7 +56,28 @@ export default function ActivityLogPage() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
-    setLogs((data as LogRow[]) || []);
+    const rows = (data as LogRow[]) || [];
+    setLogs(rows);
+
+    // Ambil status terbaru untuk semua reset password requests yang muncul di log
+    const reqIds = Array.from(
+      new Set(
+        rows
+          .filter((l) => l.metadata?.kind === 'password_reset_request' && l.metadata?.request_id)
+          .map((l) => l.metadata.request_id as string)
+      )
+    );
+    if (reqIds.length > 0) {
+      const { data: reqs } = await supabase
+        .from('password_reset_requests')
+        .select('id, status')
+        .in('id', reqIds);
+      const map: Record<string, string> = {};
+      (reqs || []).forEach((r: any) => { map[r.id] = r.status; });
+      setResetStatusMap(map);
+    } else {
+      setResetStatusMap({});
+    }
     setLoading(false);
   };
 
