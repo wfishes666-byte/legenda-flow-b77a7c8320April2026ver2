@@ -33,6 +33,7 @@ export default function ActivityLogPage() {
   const canManage = role === 'admin' || role === 'management';
 
   const [logs, setLogs] = useState<LogRow[]>([]);
+  const [resetStatusMap, setResetStatusMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [moduleFilter, setModuleFilter] = useState<string>('all');
