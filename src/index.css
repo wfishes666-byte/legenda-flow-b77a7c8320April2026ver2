@@ -140,7 +140,17 @@ html.force-mobile body {
   }
 }
 
-/* Mode Desktop: paksa lebar minimal walau di layar kecil (akan muncul horizontal scroll) */
+/* Mode Desktop: paksa lebar 1280px, tapi auto-scale-down agar tetap proporsional di layar kecil (tanpa scroll horizontal). Skala dihitung di JS via --force-desktop-scale. */
 html.force-desktop body {
   min-width: 1280px;
+  transform-origin: top left;
+}
+@media (max-width: 1279px) {
+  html.force-desktop {
+    overflow-x: hidden;
+  }
+  html.force-desktop body {
+    width: 1280px;
+    transform: scale(var(--force-desktop-scale, 1));
+  }
 }

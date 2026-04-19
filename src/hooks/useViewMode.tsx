@@ -29,6 +29,32 @@ export function ViewModeProvider({ children }: { children: ReactNode }) {
     if (mode === 'mobile') root.classList.add('force-mobile');
   }, [mode]);
 
+  // Hitung scale untuk force-desktop di layar kecil agar konten 1280px tetap muat
+  // tanpa scroll horizontal & terlihat proporsional.
+  useEffect(() => {
+    if (mode !== 'desktop') {
+      document.documentElement.style.removeProperty('--force-desktop-scale');
+      document.body.style.removeProperty('min-height');
+      return;
+    }
+    const apply = () => {
+      const w = window.innerWidth;
+      if (w >= 1280) {
+        document.documentElement.style.removeProperty('--force-desktop-scale');
+        document.body.style.removeProperty('min-height');
+        return;
+      }
+      const scale = w / 1280;
+      document.documentElement.style.setProperty('--force-desktop-scale', String(scale));
+      // body discale, jadi tinggi visual berkurang. Pastikan body cukup tinggi
+      // untuk mengisi viewport (kalkulasi terbalik dari scale).
+      document.body.style.minHeight = `${window.innerHeight / scale}px`;
+    };
+    apply();
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
+  }, [mode]);
+
   const setMode = useCallback((m: ViewMode) => setModeState(m), []);
   const toggleMode = useCallback(() => {
     setModeState((prev) => (prev === 'mobile' ? 'desktop' : 'mobile'));
