@@ -724,6 +724,16 @@ export default function FinancialReport() {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="log" className="mt-4">
+            <OutletReportRecap mode="log" />
+          </TabsContent>
+
+          <TabsContent value="stats" className="mt-4">
+            <OutletReportRecap mode="stats" />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
