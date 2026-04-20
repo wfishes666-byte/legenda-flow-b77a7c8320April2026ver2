@@ -394,7 +394,86 @@ export default function DashboardPage() {
               Ringkasan operasional Dua Legenda Grup — {outletName}
             </p>
           </div>
+
+          {/* Period selector */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={period} onValueChange={(v) => setPeriod(v as PeriodPreset)}>
+              <SelectTrigger className="w-[180px]">
+                <CalendarLucide className="w-4 h-4 mr-2 opacity-70" />
+                <SelectValue placeholder="Pilih periode" />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(PERIOD_LABELS) as PeriodPreset[]).map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {PERIOD_LABELS[k]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {period === 'custom' && (
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-[150px] justify-start text-left font-normal',
+                        !customFrom && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customFrom ? format(customFrom, 'dd MMM yyyy') : 'Dari'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customFrom}
+                      onSelect={setCustomFrom}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-[150px] justify-start text-left font-normal',
+                        !customTo && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customTo ? format(customTo, 'dd MMM yyyy') : 'Sampai'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customTo}
+                      onSelect={setCustomTo}
+                      initialFocus
+                      className={cn('p-3 pointer-events-auto')}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Period summary line */}
+        <p className="text-xs text-muted-foreground -mt-2">
+          Periode: <span className="font-medium text-foreground">{PERIOD_LABELS[period]}</span>
+          {range.from && range.to && (
+            <>
+              {' '}
+              ({format(range.from, 'dd MMM yyyy')} — {format(range.to, 'dd MMM yyyy')})
+            </>
+          )}
+        </p>
 
         {/* Outlet Tabs */}
         {outlets.length > 0 && (
