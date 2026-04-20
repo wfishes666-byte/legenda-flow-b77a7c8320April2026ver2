@@ -373,6 +373,7 @@ export default function OutletReportRecap({ mode }: Props) {
                           <th className="p-3 text-right">QRIS</th>
                           <th className="p-3 text-right">Pengeluaran</th>
                           <th className="p-3 text-right">Selisih</th>
+                          {isAdmin && <th className="p-3 text-right">Aksi</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -396,6 +397,13 @@ export default function OutletReportRecap({ mode }: Props) {
                               <td className={cn('p-3 text-right font-medium', selisih < 0 ? 'text-destructive' : selisih > 0 ? 'text-primary' : '')}>
                                 {formatRp(selisih)}
                               </td>
+                              {isAdmin && (
+                                <td className="p-3 text-right">
+                                  <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit angka">
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
