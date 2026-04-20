@@ -416,6 +416,43 @@ export default function OutletReportRecap({ mode }: Props) {
           </Collapsible>
         );
       })}
+
+      {/* Admin edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Angka Laporan</DialogTitle>
+            <DialogDescription>
+              {editing && `${editing.report_date} • ${outletMap.get(editing.outlet_id || '') || 'Tanpa Cabang'}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+            {[
+              { key: 'starting_cash', label: 'Kas Awal' },
+              { key: 'dine_in_omzet', label: 'Omzet Dine-in' },
+              { key: 'shopeefood_sales', label: 'ShopeeFood' },
+              { key: 'gofood_sales', label: 'GoFood' },
+              { key: 'grabfood_sales', label: 'GrabFood' },
+              { key: 'ending_physical_cash', label: 'Kas Fisik Akhir' },
+              { key: 'ending_qris_cash', label: 'QRIS Akhir' },
+            ].map((f) => (
+              <div key={f.key} className="space-y-1">
+                <Label className="text-xs">{f.label}</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={editForm[f.key] ?? 0}
+                  onChange={(e) => setEditForm((s) => ({ ...s, [f.key]: Number(e.target.value) || 0 }))}
+                />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Batal</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
