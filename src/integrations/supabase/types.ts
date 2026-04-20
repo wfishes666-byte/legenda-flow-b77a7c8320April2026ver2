@@ -386,6 +386,74 @@ export type Database = {
           },
         ]
       }
+      finance_daily_reports: {
+        Row: {
+          created_at: string
+          daily_offline_income: number | null
+          ending_physical_cash: number | null
+          ending_qris_cash: number | null
+          gofood_sales: number | null
+          grabfood_sales: number | null
+          id: string
+          notes: string | null
+          online_delivery_sales: number | null
+          outlet_id: string | null
+          report_date: string
+          reporter_name: string | null
+          shopeefood_sales: number | null
+          starting_cash: number | null
+          total_expense: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_offline_income?: number | null
+          ending_physical_cash?: number | null
+          ending_qris_cash?: number | null
+          gofood_sales?: number | null
+          grabfood_sales?: number | null
+          id?: string
+          notes?: string | null
+          online_delivery_sales?: number | null
+          outlet_id?: string | null
+          report_date?: string
+          reporter_name?: string | null
+          shopeefood_sales?: number | null
+          starting_cash?: number | null
+          total_expense?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_offline_income?: number | null
+          ending_physical_cash?: number | null
+          ending_qris_cash?: number | null
+          gofood_sales?: number | null
+          grabfood_sales?: number | null
+          id?: string
+          notes?: string | null
+          online_delivery_sales?: number | null
+          outlet_id?: string | null
+          report_date?: string
+          reporter_name?: string | null
+          shopeefood_sales?: number | null
+          starting_cash?: number | null
+          total_expense?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_daily_reports_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_reports: {
         Row: {
           created_at: string | null

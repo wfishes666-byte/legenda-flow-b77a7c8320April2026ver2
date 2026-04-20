@@ -12,9 +12,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Save, Camera, X, FileSpreadsheet, Printer, FileText, Image as ImageIcon, Eraser, History, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Save, Camera, X, FileSpreadsheet, Printer, FileText, Image as ImageIcon, Eraser, History, FolderOpen, BarChart3, ListChecks } from 'lucide-react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import OutletReportRecap from '@/components/finance/OutletReportRecap';
 
 interface ExpenseRow {
   id: string;
@@ -405,13 +407,24 @@ export default function FinancialReport() {
       <div className="max-w-[1400px] mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Laporan Closing Harian</h1>
-            <p className="text-muted-foreground mt-1">Sistem laporan digital Dua Legenda Grup</p>
+            <h1 className="text-2xl md:text-3xl font-bold">Laporan Harian Outlet</h1>
+            <p className="text-muted-foreground mt-1">Sistem laporan closing harian Dua Legenda Grup</p>
           </div>
-          <Button variant="outline" size="sm" onClick={resetForm}>
-            <Eraser className="w-4 h-4 mr-1" /> Reset Form
-          </Button>
         </div>
+
+        <Tabs defaultValue="input" className="w-full">
+          <TabsList>
+            <TabsTrigger value="input"><FileText className="w-4 h-4 mr-1.5" />Input Laporan</TabsTrigger>
+            <TabsTrigger value="log"><ListChecks className="w-4 h-4 mr-1.5" />Rekap Log</TabsTrigger>
+            <TabsTrigger value="stats"><BarChart3 className="w-4 h-4 mr-1.5" />Statistik per Outlet</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="input" className="mt-4 space-y-6">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={resetForm}>
+                <Eraser className="w-4 h-4 mr-1" /> Reset Form
+              </Button>
+            </div>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* LEFT: Form */}
@@ -711,6 +724,16 @@ export default function FinancialReport() {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="log" className="mt-4">
+            <OutletReportRecap mode="log" />
+          </TabsContent>
+
+          <TabsContent value="stats" className="mt-4">
+            <OutletReportRecap mode="stats" />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
