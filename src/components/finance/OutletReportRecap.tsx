@@ -106,7 +106,48 @@ export default function OutletReportRecap({ mode }: Props) {
       setLoading(false);
     };
     fetchData();
-  }, [range.from?.getTime(), range.to?.getTime()]);
+  }, [range.from?.getTime(), range.to?.getTime(), refreshKey]);
+
+  const openEdit = (r: OutletReport) => {
+    setEditing(r);
+    setEditForm({
+      starting_cash: r.starting_cash || 0,
+      dine_in_omzet: r.dine_in_omzet || r.daily_offline_income || 0,
+      shopeefood_sales: r.shopeefood_sales || 0,
+      gofood_sales: r.gofood_sales || 0,
+      grabfood_sales: r.grabfood_sales || 0,
+      ending_physical_cash: r.ending_physical_cash || 0,
+      ending_qris_cash: r.ending_qris_cash || 0,
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    const online = (editForm.shopeefood_sales || 0) + (editForm.gofood_sales || 0) + (editForm.grabfood_sales || 0);
+    const { error } = await supabase
+      .from('financial_reports')
+      .update({
+        starting_cash: editForm.starting_cash,
+        dine_in_omzet: editForm.dine_in_omzet,
+        daily_offline_income: editForm.dine_in_omzet,
+        shopeefood_sales: editForm.shopeefood_sales,
+        gofood_sales: editForm.gofood_sales,
+        grabfood_sales: editForm.grabfood_sales,
+        online_delivery_sales: online,
+        ending_physical_cash: editForm.ending_physical_cash,
+        ending_qris_cash: editForm.ending_qris_cash,
+      })
+      .eq('id', editing.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Gagal menyimpan', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Tersimpan', description: 'Data laporan diperbarui.' });
+    setEditing(null);
+    setRefreshKey((k) => k + 1);
+  };
 
   const outletMap = useMemo(() => new Map(outlets.map(o => [o.id, o.name])), [outlets]);
 
