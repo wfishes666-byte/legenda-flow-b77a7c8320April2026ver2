@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOutlets } from '@/hooks/useOutlets';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Calendar as CalendarIcon, ChevronDown, Store, TrendingUp } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, Pencil, Store, TrendingUp } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, startOfMonth, startOfYear, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
@@ -56,6 +61,9 @@ interface Props {
 
 export default function OutletReportRecap({ mode }: Props) {
   const { outlets } = useOutlets();
+  const { role } = useAuth();
+  const { toast } = useToast();
+  const isAdmin = role === 'admin';
   const [period, setPeriod] = useState<PeriodPreset>('30d');
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
@@ -63,6 +71,10 @@ export default function OutletReportRecap({ mode }: Props) {
   const [reports, setReports] = useState<OutletReport[]>([]);
   const [expensesByReport, setExpensesByReport] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<OutletReport | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const range = useMemo(() => computeRange(period, { from: customFrom, to: customTo }), [period, customFrom, customTo]);
 
@@ -94,7 +106,48 @@ export default function OutletReportRecap({ mode }: Props) {
       setLoading(false);
     };
     fetchData();
-  }, [range.from?.getTime(), range.to?.getTime()]);
+  }, [range.from?.getTime(), range.to?.getTime(), refreshKey]);
+
+  const openEdit = (r: OutletReport) => {
+    setEditing(r);
+    setEditForm({
+      starting_cash: r.starting_cash || 0,
+      dine_in_omzet: r.dine_in_omzet || r.daily_offline_income || 0,
+      shopeefood_sales: r.shopeefood_sales || 0,
+      gofood_sales: r.gofood_sales || 0,
+      grabfood_sales: r.grabfood_sales || 0,
+      ending_physical_cash: r.ending_physical_cash || 0,
+      ending_qris_cash: r.ending_qris_cash || 0,
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    const online = (editForm.shopeefood_sales || 0) + (editForm.gofood_sales || 0) + (editForm.grabfood_sales || 0);
+    const { error } = await supabase
+      .from('financial_reports')
+      .update({
+        starting_cash: editForm.starting_cash,
+        dine_in_omzet: editForm.dine_in_omzet,
+        daily_offline_income: editForm.dine_in_omzet,
+        shopeefood_sales: editForm.shopeefood_sales,
+        gofood_sales: editForm.gofood_sales,
+        grabfood_sales: editForm.grabfood_sales,
+        online_delivery_sales: online,
+        ending_physical_cash: editForm.ending_physical_cash,
+        ending_qris_cash: editForm.ending_qris_cash,
+      })
+      .eq('id', editing.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Gagal menyimpan', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Tersimpan', description: 'Data laporan diperbarui.' });
+    setEditing(null);
+    setRefreshKey((k) => k + 1);
+  };
 
   const outletMap = useMemo(() => new Map(outlets.map(o => [o.id, o.name])), [outlets]);
 
@@ -320,6 +373,7 @@ export default function OutletReportRecap({ mode }: Props) {
                           <th className="p-3 text-right">QRIS</th>
                           <th className="p-3 text-right">Pengeluaran</th>
                           <th className="p-3 text-right">Selisih</th>
+                          {isAdmin && <th className="p-3 text-right">Aksi</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -343,6 +397,13 @@ export default function OutletReportRecap({ mode }: Props) {
                               <td className={cn('p-3 text-right font-medium', selisih < 0 ? 'text-destructive' : selisih > 0 ? 'text-primary' : '')}>
                                 {formatRp(selisih)}
                               </td>
+                              {isAdmin && (
+                                <td className="p-3 text-right">
+                                  <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit angka">
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
@@ -355,6 +416,43 @@ export default function OutletReportRecap({ mode }: Props) {
           </Collapsible>
         );
       })}
+
+      {/* Admin edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Angka Laporan</DialogTitle>
+            <DialogDescription>
+              {editing && `${editing.report_date} • ${outletMap.get(editing.outlet_id || '') || 'Tanpa Cabang'}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+            {[
+              { key: 'starting_cash', label: 'Kas Awal' },
+              { key: 'dine_in_omzet', label: 'Omzet Dine-in' },
+              { key: 'shopeefood_sales', label: 'ShopeeFood' },
+              { key: 'gofood_sales', label: 'GoFood' },
+              { key: 'grabfood_sales', label: 'GrabFood' },
+              { key: 'ending_physical_cash', label: 'Kas Fisik Akhir' },
+              { key: 'ending_qris_cash', label: 'QRIS Akhir' },
+            ].map((f) => (
+              <div key={f.key} className="space-y-1">
+                <Label className="text-xs">{f.label}</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={editForm[f.key] ?? 0}
+                  onChange={(e) => setEditForm((s) => ({ ...s, [f.key]: Number(e.target.value) || 0 }))}
+                />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Batal</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
