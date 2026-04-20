@@ -414,9 +414,9 @@ export default function FinancialReport() {
 
         <Tabs defaultValue="input" className="w-full">
           <TabsList>
-            <TabsTrigger value="input"><FileText className="w-4 h-4 mr-1.5" />Input Laporan</TabsTrigger>
-            <TabsTrigger value="log"><ListChecks className="w-4 h-4 mr-1.5" />Rekap Log</TabsTrigger>
-            <TabsTrigger value="stats"><BarChart3 className="w-4 h-4 mr-1.5" />Statistik per Outlet</TabsTrigger>
+            <TabsTrigger value="input"><FileText className="w-4 h-4 sm:mr-1.5" /><span className="hidden sm:inline">Input Laporan</span><span className="sm:hidden ml-1">Input</span></TabsTrigger>
+            <TabsTrigger value="log"><ListChecks className="w-4 h-4 sm:mr-1.5" /><span className="hidden sm:inline">Rekap Log</span><span className="sm:hidden ml-1">Rekap</span></TabsTrigger>
+            <TabsTrigger value="stats"><BarChart3 className="w-4 h-4 sm:mr-1.5" /><span className="hidden sm:inline">Statistik per Outlet</span><span className="sm:hidden ml-1">Statistik</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value="input" className="mt-4 space-y-6">
