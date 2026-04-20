@@ -98,11 +98,83 @@ interface Outlet {
 
 const ALL = '__all__';
 
+type PeriodPreset = 'today' | '7d' | '30d' | 'this_month' | 'this_year' | 'all' | 'custom';
+
+const PERIOD_LABELS: Record<PeriodPreset, string> = {
+  today: 'Hari Ini',
+  '7d': '7 Hari Terakhir',
+  '30d': '30 Hari Terakhir',
+  this_month: 'Bulan Ini',
+  this_year: 'Tahun Ini',
+  all: 'Semua Waktu',
+  custom: 'Rentang Kustom',
+};
+
+const startOfDay = (d: Date) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+const endOfDay = (d: Date) => {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+};
+const toDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const computeRange = (
+  preset: PeriodPreset,
+  customFrom?: Date,
+  customTo?: Date,
+): { from: Date | null; to: Date | null } => {
+  const now = new Date();
+  switch (preset) {
+    case 'today':
+      return { from: startOfDay(now), to: endOfDay(now) };
+    case '7d': {
+      const f = startOfDay(now);
+      f.setDate(f.getDate() - 6);
+      return { from: f, to: endOfDay(now) };
+    }
+    case '30d': {
+      const f = startOfDay(now);
+      f.setDate(f.getDate() - 29);
+      return { from: f, to: endOfDay(now) };
+    }
+    case 'this_month':
+      return {
+        from: startOfDay(new Date(now.getFullYear(), now.getMonth(), 1)),
+        to: endOfDay(now),
+      };
+    case 'this_year':
+      return {
+        from: startOfDay(new Date(now.getFullYear(), 0, 1)),
+        to: endOfDay(now),
+      };
+    case 'custom':
+      return {
+        from: customFrom ? startOfDay(customFrom) : null,
+        to: customTo ? endOfDay(customTo) : null,
+      };
+    case 'all':
+    default:
+      return { from: null, to: null };
+  }
+};
+
 export default function DashboardPage() {
   const { toast } = useToast();
   const { role } = useAuth();
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [selectedOutlet, setSelectedOutlet] = useState<string>(ALL);
+  const [period, setPeriod] = useState<PeriodPreset>('30d');
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
 
   const [financials, setFinancials] = useState<FinancialSummary[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveReq[]>([]);
@@ -111,6 +183,11 @@ export default function DashboardPage() {
   const [staff, setStaff] = useState<StaffOverview[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLogRow[]>([]);
   const [totals, setTotals] = useState({ totalIncome: 0, totalExpenses: 0 });
+
+  const range = useMemo(
+    () => computeRange(period, customFrom, customTo),
+    [period, customFrom, customTo],
+  );
 
   // Load outlets once
   useEffect(() => {
@@ -126,7 +203,7 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedOutlet]);
+  }, [selectedOutlet, period, customFrom, customTo]);
 
   const applyOutletFilter = <T extends { outlet_id?: string | null }>(q: any) => {
     if (selectedOutlet !== ALL) {
