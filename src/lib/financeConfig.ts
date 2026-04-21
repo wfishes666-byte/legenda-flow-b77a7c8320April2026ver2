@@ -33,6 +33,8 @@ export interface OutletFinanceConfig {
   pair_groups?: PairGroup[];
   summary_groups: SummaryGroup[];
   selisih_formula: string;
+  /** When set, shows a read-only inline field (in the income grid) displaying the selisih value. */
+  selisih_inline_label?: string;
 }
 
 /**
