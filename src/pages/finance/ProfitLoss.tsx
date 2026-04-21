@@ -440,13 +440,13 @@ export default function ProfitLossPage() {
                     </span>
                   </div>
                   <div
-                    className={`grid grid-cols-[1fr_auto_70px] items-center px-5 py-4 gap-4 font-bold ${
+                    className={`grid grid-cols-[1fr_auto_60px] items-center px-4 py-3 gap-3 text-sm font-bold ${
                       netProfit >= 0 ? 'bg-green-500/30 text-foreground' : 'bg-destructive/20 text-destructive'
                     }`}
                   >
                     <span>Laba Bersih</span>
                     <span className="text-right">{formatRp(netProfit)}</span>
-                    <span className="text-sm text-right">
+                    <span className="text-xs text-right">
                       {(totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0).toFixed(2).replace('.', ',')}%
                     </span>
                   </div>
