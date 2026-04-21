@@ -268,28 +268,40 @@ export default function DailyRecapPage() {
                     </div>
                   </div>
 
-                  {/* Dynamic income fields */}
-                  {activeConfig.income_fields.length > 0 && (
-                    <div className={cn(
-                      'grid grid-cols-1 gap-4',
-                      activeConfig.income_fields.length === 2 && 'md:grid-cols-2',
-                      activeConfig.income_fields.length >= 3 && 'md:grid-cols-3'
-                    )}>
-                      {activeConfig.income_fields.map((f) => (
-                        <div key={f.key}>
-                          <Label>{f.label}</Label>
-                          <Input
-                            type="number"
-                            value={incomeValues[f.key] || ''}
-                            onChange={(e) =>
-                              setIncomeValues((prev) => ({ ...prev, [f.key]: Number(e.target.value) }))
-                            }
-                            placeholder="Rp 0"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* Dynamic income fields (+ optional inline read-only selisih field) */}
+                  {(() => {
+                    const totalCells = activeConfig.income_fields.length + (activeConfig.selisih_inline_label ? 1 : 0);
+                    if (totalCells === 0) return null;
+                    return (
+                      <div className={cn(
+                        'grid grid-cols-1 gap-4',
+                        totalCells === 2 && 'md:grid-cols-2',
+                        totalCells >= 3 && 'md:grid-cols-3',
+                      )}>
+                        {activeConfig.income_fields.map((f) => (
+                          <div key={f.key}>
+                            <Label>{f.label}</Label>
+                            <Input
+                              type="number"
+                              value={incomeValues[f.key] || ''}
+                              onChange={(e) =>
+                                setIncomeValues((prev) => ({ ...prev, [f.key]: Number(e.target.value) }))
+                              }
+                              placeholder="Rp 0"
+                            />
+                          </div>
+                        ))}
+                        {activeConfig.selisih_inline_label && (
+                          <div>
+                            <Label>{activeConfig.selisih_inline_label}</Label>
+                            <div className="h-10 flex items-center px-3 rounded-md border border-input bg-muted/40 text-sm font-semibold">
+                              {formatRp(selisih)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Dynamic pair groups (parallel columns: e.g. Penjualan vs Pendapatan Online) */}
                   {(activeConfig.pair_groups || []).map((pg) => {
