@@ -311,9 +311,9 @@ export default function InvoicePage() {
                   <span className="font-bold text-lg">Grand Total: {formatRp(grandTotal)}</span>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="space-y-3">
                   <p className="text-xs text-muted-foreground italic">
-                    * Invoice disimpan terpisah dan dapat dilihat di tab Rekap Invoice & Ringkasan.
+                    * Items invoice akan otomatis dimuat ke Pengeluaran Transfer di Laporan Harian {outlets.find((o) => o.id === outletId)?.name || 'Outlet'}.
                   </p>
                   <Button onClick={handleGenerate} disabled={saving}>
                     {saving ? 'Menyimpan...' : 'Generate Invoice'}
