@@ -78,6 +78,7 @@ export default function DailyRecapPage() {
           map[row.outlet_id] = {
             outlet_id: row.outlet_id,
             income_fields: row.income_fields || [],
+            pair_groups: row.pair_groups || [],
             summary_groups: row.summary_groups || [],
             selisih_formula: row.selisih_formula || '',
           };
@@ -94,8 +95,14 @@ export default function DailyRecapPage() {
   useEffect(() => {
     const init: Record<string, number> = {};
     activeConfig.income_fields.forEach((f) => { init[f.key] = 0; });
+    (activeConfig.pair_groups || []).forEach((pg) => {
+      pg.platforms.forEach((p) => {
+        init[`${pg.left_prefix}_${p.key}`] = 0;
+        init[`${pg.right_prefix}_${p.key}`] = 0;
+      });
+    });
     setIncomeValues(init);
-  }, [activeOutlet, activeConfig.income_fields.length]);
+  }, [activeOutlet, activeConfig.income_fields.length, activeConfig.pair_groups?.length]);
 
   const fetchReports = async () => {
     if (!activeOutlet) return;
@@ -283,7 +290,47 @@ export default function DailyRecapPage() {
                     </div>
                   )}
 
-                  {/* Pengeluaran */}
+                  {/* Dynamic pair groups (parallel columns: e.g. Penjualan vs Pendapatan Online) */}
+                  {(activeConfig.pair_groups || []).map((pg) => {
+                    const leftTotal = pg.platforms.reduce(
+                      (s, p) => s + (incomeValues[`${pg.left_prefix}_${p.key}`] || 0), 0,
+                    );
+                    const rightTotal = pg.platforms.reduce(
+                      (s, p) => s + (incomeValues[`${pg.right_prefix}_${p.key}`] || 0), 0,
+                    );
+                    return (
+                      <div key={pg.key} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {([
+                          { label: pg.left_label, prefix: pg.left_prefix, total: leftTotal },
+                          { label: pg.right_label, prefix: pg.right_prefix, total: rightTotal },
+                        ]).map((col) => (
+                          <div key={col.prefix} className="space-y-3">
+                            <h4 className="font-semibold text-sm">{col.label}</h4>
+                            {pg.platforms.map((p) => {
+                              const k = `${col.prefix}_${p.key}`;
+                              return (
+                                <div key={k}>
+                                  <Label className="text-xs text-muted-foreground">{p.label}</Label>
+                                  <Input
+                                    type="number"
+                                    value={incomeValues[k] || ''}
+                                    onChange={(e) =>
+                                      setIncomeValues((prev) => ({ ...prev, [k]: Number(e.target.value) }))
+                                    }
+                                    placeholder="Rp 0"
+                                  />
+                                </div>
+                              );
+                            })}
+                            <div className="bg-muted/40 border border-border rounded-md px-3 py-2 text-sm">
+                              Total: <span className="font-semibold">{formatRp(col.total)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold">Pengeluaran</h3>

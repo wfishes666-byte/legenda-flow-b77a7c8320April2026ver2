@@ -6,6 +6,16 @@ export interface IncomeField {
   group?: string; // optional group code (A/B/C/D) for summary
 }
 
+/** Two parallel columns sharing a list of platforms (e.g. Penjualan vs Pendapatan Online Food). */
+export interface PairGroup {
+  key: string;
+  left_label: string;
+  right_label: string;
+  left_prefix: string;   // e.g. "penjualan_online" -> field keys "penjualan_online_grabfood"
+  right_prefix: string;  // e.g. "pendapatan_online"
+  platforms: { key: string; label: string }[];
+}
+
 export interface SummaryGroup {
   code: string;
   label: string;
@@ -18,6 +28,7 @@ export interface SummaryGroup {
 export interface OutletFinanceConfig {
   outlet_id: string;
   income_fields: IncomeField[];
+  pair_groups?: PairGroup[];
   summary_groups: SummaryGroup[];
   selisih_formula: string;
 }
