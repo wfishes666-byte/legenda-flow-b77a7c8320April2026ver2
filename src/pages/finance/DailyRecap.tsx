@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Save, Trash2, X } from 'lucide-react';
+import { ChevronDown, Plus, Save, Trash2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -58,6 +58,7 @@ export default function DailyRecapPage() {
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<ExpenseLine[]>([newLine('cash')]);
   const [expenseTab, setExpenseTab] = useState<PaymentType>('cash');
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   // Resolve current outlet config (fallback to default)
   const activeConfig: OutletFinanceConfig = useMemo(() => {
@@ -509,13 +510,14 @@ export default function DailyRecapPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border text-left text-muted-foreground">
-                        <th className="p-3 font-medium">Tanggal</th>
-                        <th className="p-3 font-medium">Pelapor</th>
-                        <th className="p-3 font-medium">Cash</th>
-                        <th className="p-3 font-medium">Transfer</th>
-                        <th className="p-3 font-medium">Total Pengeluaran</th>
-                        {role === 'admin' && <th className="p-3 font-medium" />}
+                      <tr className="border-b border-border text-muted-foreground bg-muted/30">
+                        <th className="p-3 font-medium text-left uppercase text-xs tracking-wider">Tanggal</th>
+                        <th className="p-3 font-medium text-center uppercase text-xs tracking-wider">Pengeluaran Cash</th>
+                        <th className="p-3 font-medium text-center uppercase text-xs tracking-wider">Pengeluaran Transfer</th>
+                        <th className="p-3 font-medium text-center uppercase text-xs tracking-wider">Total Pengeluaran</th>
+                        <th className="p-3 font-medium text-center uppercase text-xs tracking-wider">Selisih</th>
+                        <th className="p-3 font-medium w-12" />
+                        {role === 'admin' && <th className="p-3 font-medium w-12" />}
                       </tr>
                     </thead>
                     <tbody>
@@ -523,26 +525,101 @@ export default function DailyRecapPage() {
                         const items = (r.finance_expense_items || []) as any[];
                         const tCash = items.filter((i) => i.payment_type === 'cash').reduce((s, i) => s + Number(i.subtotal || 0), 0);
                         const tTransfer = items.filter((i) => i.payment_type === 'transfer').reduce((s, i) => s + Number(i.subtotal || 0), 0);
+                        const tTotal = tCash + tTransfer;
+                        const extra = (r.extra_fields || {}) as Record<string, number>;
+                        const rowSelisih = evalSelisih(activeConfig.selisih_formula, {
+                          ...extra,
+                          total_expense: tTotal,
+                          total_cash_expense: tCash,
+                          total_transfer_expense: tTransfer,
+                        });
+                        const isExpanded = !!expandedRows[r.id];
+                        const colSpan = role === 'admin' ? 7 : 6;
                         return (
-                          <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30">
-                            <td className="p-3">{r.report_date}</td>
-                            <td className="p-3">{r.reporter_name || '-'}</td>
-                            <td className="p-3">{formatRp(tCash)}</td>
-                            <td className="p-3">{formatRp(tTransfer)}</td>
-                            <td className="p-3"><Badge variant="secondary">{formatRp(tCash + tTransfer)}</Badge></td>
-                            {role === 'admin' && (
-                              <td className="p-3">
-                                <Button size="icon" variant="ghost" onClick={() => handleDelete(r.id)}>
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </Button>
+                          <Fragment key={r.id}>
+                            <tr
+                              className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
+                              onClick={() => setExpandedRows((prev) => ({ ...prev, [r.id]: !prev[r.id] }))}
+                            >
+                              <td className="p-3 text-left">{r.report_date}</td>
+                              <td className="p-3 text-center">{formatRp(tCash)}</td>
+                              <td className="p-3 text-center">{formatRp(tTransfer)}</td>
+                              <td className="p-3 text-center">{formatRp(tTotal)}</td>
+                              <td className={cn(
+                                'p-3 text-center font-semibold',
+                                rowSelisih > 0 && 'text-success',
+                                rowSelisih < 0 && 'text-destructive',
+                              )}>
+                                {rowSelisih > 0 && '+'}{formatRp(rowSelisih)}
                               </td>
+                              <td className="p-3 text-center">
+                                <ChevronDown
+                                  className={cn('w-4 h-4 inline-block transition-transform text-muted-foreground', isExpanded && 'rotate-180')}
+                                />
+                              </td>
+                              {role === 'admin' && (
+                                <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                  <Button size="icon" variant="ghost" onClick={() => handleDelete(r.id)}>
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </td>
+                              )}
+                            </tr>
+                            {isExpanded && (
+                              <tr className="bg-muted/20 border-b border-border/50">
+                                <td colSpan={colSpan} className="p-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                    {items.length > 0 ? (
+                                      <div>
+                                        <div className="font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Rincian Pengeluaran</div>
+                                        <div className="space-y-1">
+                                          {items.map((it) => (
+                                            <div key={it.id} className="flex justify-between gap-3">
+                                              <span className="capitalize text-muted-foreground">[{it.payment_type}]</span>
+                                              <span className="flex-1">{it.item_name || '-'}</span>
+                                              <span>{it.qty} × {formatRp(Number(it.unit_price))}</span>
+                                              <span className="font-medium">{formatRp(Number(it.subtotal))}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-muted-foreground">Tidak ada item pengeluaran.</div>
+                                    )}
+                                    {Object.keys(extra).length > 0 && (
+                                      <div>
+                                        <div className="font-semibold mb-2 uppercase tracking-wider text-muted-foreground">Pendapatan</div>
+                                        <div className="space-y-1">
+                                          {activeConfig.income_fields.map((f) => (
+                                            <div key={f.key} className="flex justify-between">
+                                              <span className="text-muted-foreground">{f.label}</span>
+                                              <span>{formatRp(Number(extra[f.key] || 0))}</span>
+                                            </div>
+                                          ))}
+                                          {(activeConfig.pair_groups || []).flatMap((pg) =>
+                                            pg.platforms.flatMap((p) => [
+                                              { k: `${pg.left_prefix}_${p.key}`, lbl: `${pg.left_label} - ${p.label}` },
+                                              { k: `${pg.right_prefix}_${p.key}`, lbl: `${pg.right_label} - ${p.label}` },
+                                            ])
+                                          ).map(({ k, lbl }) => (
+                                            <div key={k} className="flex justify-between">
+                                              <span className="text-muted-foreground">{lbl}</span>
+                                              <span>{formatRp(Number(extra[k] || 0))}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                          </tr>
+                          </Fragment>
                         );
                       })}
                       {reports.length === 0 && (
                         <tr>
-                          <td colSpan={role === 'admin' ? 6 : 5} className="p-8 text-center text-muted-foreground">
+                          <td colSpan={role === 'admin' ? 7 : 6} className="p-8 text-center text-muted-foreground">
                             Belum ada laporan untuk cabang ini.
                           </td>
                         </tr>
