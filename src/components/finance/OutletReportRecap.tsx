@@ -86,6 +86,29 @@ export default function OutletReportRecap({ mode }: Props) {
   const [loadingExpenses, setLoadingExpenses] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deleting, setDeleting] = useState<OutletReport | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setDeletingBusy(true);
+    // Delete expense_items first (no FK cascade guaranteed via app), then the report
+    const { error: expErr } = await supabase.from('expense_items').delete().eq('report_id', deleting.id);
+    if (expErr) {
+      toast({ title: 'Gagal menghapus pengeluaran', description: expErr.message, variant: 'destructive' });
+      setDeletingBusy(false);
+      return;
+    }
+    const { error } = await supabase.from('financial_reports').delete().eq('id', deleting.id);
+    setDeletingBusy(false);
+    if (error) {
+      toast({ title: 'Gagal menghapus laporan', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Laporan dihapus' });
+    setDeleting(null);
+    setRefreshKey((k) => k + 1);
+  };
 
   const range = useMemo(() => computeRange(period, { from: customFrom, to: customTo }), [period, customFrom, customTo]);
 
