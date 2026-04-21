@@ -438,7 +438,12 @@ export default function DailyRecapPage() {
                       // Compute group total
                       let groupTotal = 0;
                       if (g.is_selisih) groupTotal = selisih;
-                      else if (g.includes_expense) groupTotal = totalExpense;
+                      else if (g.includes_expense) {
+                        groupTotal =
+                          g.expense_type === 'cash' ? totalCashExpense
+                          : g.expense_type === 'transfer' ? totalTransferExpense
+                          : totalExpense;
+                      }
                       else groupTotal = sumGroup(g.fields);
 
                       const fieldRows = (g.fields || [])
