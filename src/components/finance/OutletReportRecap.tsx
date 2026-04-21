@@ -86,6 +86,29 @@ export default function OutletReportRecap({ mode }: Props) {
   const [loadingExpenses, setLoadingExpenses] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deleting, setDeleting] = useState<OutletReport | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setDeletingBusy(true);
+    // Delete expense_items first (no FK cascade guaranteed via app), then the report
+    const { error: expErr } = await supabase.from('expense_items').delete().eq('report_id', deleting.id);
+    if (expErr) {
+      toast({ title: 'Gagal menghapus pengeluaran', description: expErr.message, variant: 'destructive' });
+      setDeletingBusy(false);
+      return;
+    }
+    const { error } = await supabase.from('financial_reports').delete().eq('id', deleting.id);
+    setDeletingBusy(false);
+    if (error) {
+      toast({ title: 'Gagal menghapus laporan', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Laporan dihapus' });
+    setDeleting(null);
+    setRefreshKey((k) => k + 1);
+  };
 
   const range = useMemo(() => computeRange(period, { from: customFrom, to: customTo }), [period, customFrom, customTo]);
 
@@ -457,9 +480,14 @@ export default function OutletReportRecap({ mode }: Props) {
                               </td>
                               {isAdmin && (
                                 <td className="p-3 text-right">
-                                  <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit angka">
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit angka">
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" onClick={() => setDeleting(r)} title="Hapus laporan" className="text-destructive hover:text-destructive">
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 </td>
                               )}
                             </tr>
@@ -565,6 +593,30 @@ export default function OutletReportRecap({ mode }: Props) {
           <DialogFooter className="pt-3 border-t">
             <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Batal</Button>
             <Button onClick={saveEdit} disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin delete confirmation */}
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && !deletingBusy && setDeleting(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Hapus Laporan?</DialogTitle>
+            <DialogDescription>
+              {deleting && (
+                <>
+                  Laporan tanggal <strong>{deleting.report_date}</strong> di{' '}
+                  <strong>{outletMap.get(deleting.outlet_id || '') || 'Tanpa Cabang'}</strong> beserta seluruh
+                  rincian pengeluarannya akan dihapus permanen. Aksi ini tidak bisa dibatalkan.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)} disabled={deletingBusy}>Batal</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deletingBusy}>
+              {deletingBusy ? 'Menghapus...' : 'Hapus'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
