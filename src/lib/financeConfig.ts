@@ -28,6 +28,7 @@ export interface SummaryGroup {
 export interface OutletFinanceConfig {
   outlet_id: string;
   income_fields: IncomeField[];
+  pair_groups?: PairGroup[];
   summary_groups: SummaryGroup[];
   selisih_formula: string;
 }
