@@ -478,10 +478,10 @@ export default function DashboardPage() {
         {/* Outlet Tabs */}
         {outlets.length > 0 && (
           <Tabs value={selectedOutlet} onValueChange={setSelectedOutlet} className="w-full">
-            <TabsList className="flex flex-wrap h-auto justify-start">
-              <TabsTrigger value={ALL}>Semua Cabang</TabsTrigger>
+            <TabsList className="flex flex-wrap gap-1 h-auto justify-start w-full">
+              <TabsTrigger value={ALL} className="flex-none whitespace-normal text-left h-auto py-1.5">Semua Cabang</TabsTrigger>
               {outlets.map((o) => (
-                <TabsTrigger key={o.id} value={o.id}>
+                <TabsTrigger key={o.id} value={o.id} className="flex-none whitespace-normal text-left h-auto py-1.5">
                   {o.name}
                 </TabsTrigger>
               ))}
