@@ -480,9 +480,14 @@ export default function OutletReportRecap({ mode }: Props) {
                               </td>
                               {isAdmin && (
                                 <td className="p-3 text-right">
-                                  <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit angka">
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button size="icon" variant="ghost" onClick={() => openEdit(r)} title="Edit angka">
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" onClick={() => setDeleting(r)} title="Hapus laporan" className="text-destructive hover:text-destructive">
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 </td>
                               )}
                             </tr>
