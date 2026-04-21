@@ -463,8 +463,11 @@ export default function OutletReportRecap({ mode }: Props) {
                           const online = r.online_delivery_sales || ((r.shopeefood_sales || 0) + (r.gofood_sales || 0) + (r.grabfood_sales || 0));
                           const omzet = r.dine_in_omzet || r.daily_offline_income || 0;
                           const expense = expensesByReport.get(r.id) || 0;
-                          const cashIn = (r.ending_physical_cash || 0) + (r.ending_qris_cash || 0);
-                          const selisih = cashIn - ((omzet + online) - expense);
+                          const modal = r.starting_cash || 0;
+                          const qris = r.ending_qris_cash || 0;
+                          const cash = r.ending_physical_cash || 0;
+                          // Rumus: (QRIS + (Cash - Modal)) - (Penjualan Omzet - Pengeluaran)
+                          const selisih = (qris + (cash - modal)) - ((omzet + online) - expense);
                           return (
                             <tr key={r.id} className="border-b border-border/50 hover:bg-muted/20">
                               <td className="p-3 font-medium">{r.report_date}</td>
