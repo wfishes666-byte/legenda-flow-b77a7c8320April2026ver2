@@ -191,12 +191,12 @@ export default function AttendancePage() {
           <TabsContent value="input" className="space-y-4">
             {/* Outlet tabs */}
             <Tabs value={selectedOutlet} onValueChange={setSelectedOutlet}>
-              <TabsList className="flex-wrap h-auto bg-transparent border-b border-border w-full justify-start rounded-none p-0">
+              <TabsList className="flex-wrap gap-x-2 h-auto bg-transparent border-b border-border w-full justify-start rounded-none p-0">
                 {outlets.map((o) => (
                   <TabsTrigger
                     key={o.id}
                     value={o.id}
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    className="flex-none whitespace-normal text-left h-auto data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
                   >
                     {o.name}
                   </TabsTrigger>
@@ -490,10 +490,10 @@ function SelfieLogsTab({ outlets, allProfiles }: { outlets: { id: string; name: 
     <Card className="glass-card">
       <CardContent className="p-4 space-y-4">
         <Tabs value={outletFilter} onValueChange={setOutletFilter}>
-          <TabsList className="flex-wrap h-auto bg-transparent border-b border-border w-full justify-start rounded-none p-0">
+          <TabsList className="flex-wrap gap-x-2 h-auto bg-transparent border-b border-border w-full justify-start rounded-none p-0">
             <TabsTrigger
               value="all"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="flex-none whitespace-normal text-left h-auto data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
               Semua Outlet
             </TabsTrigger>
@@ -501,7 +501,7 @@ function SelfieLogsTab({ outlets, allProfiles }: { outlets: { id: string; name: 
               <TabsTrigger
                 key={o.id}
                 value={o.id}
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                className="flex-none whitespace-normal text-left h-auto data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               >
                 {o.name}
               </TabsTrigger>

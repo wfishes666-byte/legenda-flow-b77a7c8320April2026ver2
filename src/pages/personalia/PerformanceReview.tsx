@@ -266,10 +266,10 @@ export default function PerformanceReviewPage() {
         <Card className="glass-card">
           <CardContent className="p-4">
             <Tabs value={outletId} onValueChange={setOutletId}>
-              <TabsList className="flex-wrap h-auto bg-transparent border-b border-border w-full justify-start rounded-none p-0">
+              <TabsList className="flex-wrap gap-x-2 h-auto bg-transparent border-b border-border w-full justify-start rounded-none p-0">
                 <TabsTrigger
                   value={ALL}
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  className="flex-none whitespace-normal text-left h-auto data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
                 >
                   Semua Outlet
                 </TabsTrigger>
@@ -277,7 +277,7 @@ export default function PerformanceReviewPage() {
                   <TabsTrigger
                     key={o.id}
                     value={o.id}
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                    className="flex-none whitespace-normal text-left h-auto data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none"
                   >
                     {o.name}
                   </TabsTrigger>
