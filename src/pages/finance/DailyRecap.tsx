@@ -246,17 +246,17 @@ export default function DailyRecapPage() {
               {/* Form */}
               <Card className="glass-card lg:col-span-2">
                 <CardContent className="p-6 space-y-6">
-                  <h2 className="text-lg font-semibold">{activeOutletName || 'Pilih cabang'}</h2>
-
-                  {/* Tanggal & Pelapor */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Tanggal</Label>
-                      <Input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Nama Pelapor</Label>
-                      <Input value={reporterName} onChange={(e) => setReporterName(e.target.value)} placeholder="Opsional" />
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <h2 className="text-lg font-semibold">{activeOutletName || 'Pilih cabang'}</h2>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="report-date" className="text-sm text-muted-foreground whitespace-nowrap">Tanggal</Label>
+                      <Input
+                        id="report-date"
+                        type="date"
+                        value={reportDate}
+                        onChange={(e) => setReportDate(e.target.value)}
+                        className="w-auto"
+                      />
                     </div>
                   </div>
 
