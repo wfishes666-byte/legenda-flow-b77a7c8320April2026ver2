@@ -20,9 +20,11 @@ export interface SummaryGroup {
   code: string;
   label: string;
   fields?: string[];                    // income field keys to sum
-  includes_expense?: boolean;           // sums total expense
+  includes_expense?: boolean;           // sums expense (default: all)
+  expense_type?: 'cash' | 'transfer' | 'all'; // restrict expense sum to a payment type
   expense_breakdown?: ('cash' | 'transfer')[]; // sub-rows under this group
   is_selisih?: boolean;                 // computed via selisih_formula
+  hide_amount?: boolean;                // hide computed amount on the row (label-only header)
 }
 
 export interface OutletFinanceConfig {
